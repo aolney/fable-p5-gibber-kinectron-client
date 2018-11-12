@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <title>Gibber Kinectron Client</title>
+  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" type="image/png" href="img/favicon-32x32.png" sizes="32x32" />
+  <link rel="shortcut icon" type="image/png" href="img/favicon-16x16.png" sizes="16x16" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+   <!-- include the following scripts for global fable import; currently p5.gibber.js import via node does not work, see https://github.com/charlieroberts/p5.gibber.js/issues/4 -->
+  <script language="javascript" src="p5.min.js"></script>
+  <script src="p5.gibber.js" type="text/javascript" charset="utf-8"></script>
+  <!-- doing same with kinectron client library; seems to assume browser is global  -->
+  <script src="kinectron.bundle.js"></script>
+  <script src="https://cdn.polyfill.io/v2/polyfill.js?features=es6"></script>
+</head>
+<body>
+  <div id="elmish-app"></div>
+  <script src="bundle.js"></script>
+</body>
+</html>
