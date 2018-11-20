@@ -5,6 +5,7 @@ open Fable.Core
 open Fable.Import.JS
 open Fable.Import.Browser
 
+
 //NOTE: we change all these imports to Global b/c npm import of p5.gibber.js not working, see here https://github.com/charlieroberts/p5.gibber.js/issues/4
 //If these are changed back, then add these dependencies to package.json
 // "p5":"^0.5.16",
@@ -12,7 +13,10 @@ open Fable.Import.Browser
 module p5 =
     type [<AllowNullLiteral>] [<Global>] Color() =
         class end
-
+    and [<Global>] [<StringEnum>] Alignment = 
+        | [<CompiledName("left")>] LEFT 
+        | [<CompiledName("right")>] RIGHT 
+        | [<CompiledName("center")>] CENTER
     and [<AllowNullLiteral>] [<Global>] Element(elt: string, ?pInst: obj) =
         member __.elt with get(): obj = jsNative and set(v: obj): unit = jsNative
         member __.parent(parent: U2<string, obj>): Element = jsNative
@@ -471,6 +475,8 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.red(obj: obj): unit = jsNative
         member __.saturation(color: obj): unit = jsNative
         member __.background(v1: U4<float, string, p5.Color, p5.Image>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
+        //member __.textAlign(v1: U3<p5.LEFT,p5.CENTER,p5.RIGHT>): unit = jsNative
+        member __.textAlign(v1:p5.Alignment): unit = jsNative
         member __.clear(): unit = jsNative
         member __.fill(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
         member __.noFill(): unit = jsNative
@@ -604,7 +610,7 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.textLeading(leading: float): U2<obj, float> = jsNative
         member __.textSize(theSize: float): U2<obj, float> = jsNative
         member __.textWidth(theText: string): float = jsNative
-        member __.text(str: string, x: float, y: float, x2: float, y2: float): obj = jsNative
+        member __.text(str: string, x: float, y: float, ?x2: float, ?y2: float): obj = jsNative
         member __.textFont(f: U2<obj, string>): obj = jsNative
         member __.append(array: ResizeArray<obj>, value: obj): unit = jsNative
         member __.concat(a: ResizeArray<obj>, b: ResizeArray<obj>): ResizeArray<obj> = jsNative
