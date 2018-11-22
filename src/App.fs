@@ -16,6 +16,21 @@ open Fable.Import.React
 
 importAll "../sass/main.sass"
 
+//Helpers
+//-----------------------------------------------------------------------------
+[<Fable.Core.Emit("$0.push($1)")>]
+let push (sb:'a[]) (v:'a) = failwith "js"
+[<Fable.Core.Emit("$0.join($1)")>]
+let join (sb:'a[]) (sep:string) = failwith "js"
+
+type ``[]``<'a> with
+  member x.push(v) = push x v
+  member x.join(s) = join x s
+
+let inline private (~%) x = createObj x
+
+let inline private (=>) x y = x ==> y
+
 //Domain
 //-----------------------------------------------------------------------------
 type UIMode =
@@ -33,6 +48,11 @@ type BodyModel =
     LeftHand : float * float
     RightHand : float * float
   }
+
+// [<Pojo>]
+// type GibberCode = {
+//   code : string
+// }
 
 type Model = 
   {
@@ -94,10 +114,15 @@ let GetColors(p : p5) =  //NOTE: string based color apis not working?
     p.color( 128.0 |> U2.Case1, 0.0, 128.0);
   |]
 
-// [<Emit("p.textAlign(CENTER)")>]
-// let textAlign() : unit = jsNative
+let gibberSketch =
+  new System.Func<obj,unit>(
+        fun o ->
+          let p = o |> unbox<p5>
+          p.setup <- fun() -> ()
+          p.draw <- fun() -> ()
+  )
 
-let getSketch ip canvasWidth canvasHeight = 
+let kinectronSketch ip canvasWidth canvasHeight = 
     new System.Func<obj,unit>(
         fun o ->
             let p = o |> unbox<p5>
@@ -138,7 +163,7 @@ let getSketch ip canvasWidth canvasHeight =
               let leftY = ( body.joints.[kinectron.HANDLEFT].depthY - body.joints.[kinectron.SPINEBASE].depthY )/(width * 3.0) 
               let rightX = (body.joints.[kinectron.SHOULDERRIGHT].depthX - body.joints.[kinectron.HANDRIGHT].depthX)/(width * 2.0) 
               let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
-              
+
               //display state
               p.fill( 255.0 |> U4.Case1 )
               p.noStroke()
@@ -147,8 +172,6 @@ let getSketch ip canvasWidth canvasHeight =
                 System.Math.Round(f,1).ToString()
               
               p.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
-             
-
 
               //Dispatch message for body state
               mapEvent.Trigger ( Msg.Body( {Id=body.bodyIndex; Mode=bodyMode; LeftHand=leftX,leftY; RightHand=rightX,rightY}  ) )
@@ -215,7 +238,7 @@ let update msg model : Model * Cmd<Msg> =
         //since handler must be Func, which is anonymous, we must store a reference in our model to unsubscribe later
         Fable.Import.Browser.window.addEventListener_mousemove moveHandler 
         Fable.Import.Browser.window.addEventListener_click clickHandler 
-        { model with Mode = Mouse; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
+        { model with Mode = Mouse; P5 = p5( gibberSketch ); MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
   | MouseMove(x,y) ->
       match (x,y) with
       //update the left hand with a body command
@@ -225,27 +248,14 @@ let update msg model : Model * Cmd<Msg> =
       //either the image does not exist or we are outside the vitruvian regions
       | _ -> model, []
 
-    // //get image relative coordinates
-    // let image = Browser.document.getElementById("vitruvian")
-    // if image <> null then
-    //   let rect = image.getBoundingClientRect()
-    //   let xrel,yrel = x - rect.left,y - rect.top
-    //   //if we are within left/right hand bounding box, register as kinect data
-    //   let validLeft = xrel > 65.0 && xrel < 320.0 && yrel > 220.0 && yrel < 600.0
-    //   let validRight = xrel > 455.0 && xrel < 710.0 && yrel > 220.0 && yrel < 595.0
-
-    //   let bodyCmd = 
-    //     if validLeft then
-    //       Msg.Body( {Id=0; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
-    //     elif validRight then
-    //       Msg.Body( {Id=0; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
-    //     else
-    //       []
-          
-    //   { model with MousePosition = xrel,yrel }, bodyCmd
-    // else
-    //   model,[]
   | MouseClick(x,y) ->
+  //TODO: we can't use instance gibber b/c we need it to be global to execute code using the clock
+  //at this point I wonder if it would be better to use the DT P5 and pure gibberlib separately
+  //For now start with gibberlib separately and see if we can execute the line of code below properly
+      //Gibber.Clock.codeToExecute.push( { code:"Kick().play( 55, Euclid( 5,8 ) )" } )
+    //drums <- p.EDrums("x*o*x*o-")      
+      //model.P5.Clock.codeToExecute.push( %[ "code" => "p5.Kick().play( 55, p5.Euclid( 5,8 ) )" ] )
+
       match (x,y) with
       //update the right hand with a programming body command
       | VitruvianRight (xrel,yrel) -> { model with MousePosition = x,y;Debug = ("mouse click " + x.ToString() + " " + y.ToString() ) }, Msg.Body( {Id=model.DefaultBody; Mode=Programming ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
@@ -255,9 +265,11 @@ let update msg model : Model * Cmd<Msg> =
   | ChangeIPStr str ->
       { model with KinectronIP = str}, []
   | ConnectKinectron -> 
-      { model with P5 = p5( getSketch model.KinectronIP 700.0 410.0)},[]
+    //TODO: we must have a P5 instance to use gibber, so we need it on startup, not on connection; or we need two instances
+      { model with P5 = p5( kinectronSketch model.KinectronIP 700.0 410.0)},[]
   | Body b ->
     //TODO: ENGAGE GIBBER HERE
+
     let newBodies = model.Bodies
     newBodies.[b.Id] <- b
     { model with Bodies = newBodies},[]
@@ -291,6 +303,8 @@ let mouseView model dispatch =
     span [ Style [CSSProp.FontSize 28 ] ] [ 
       str "Move your mouse to adjust parameters within each red region. To program and lock in a rhythm, click the mouse." 
       ]
+    //if we attach mouse event handlers to img, e.g. img [ OnMouseMove (fun ev -> MouseMove(ev) |> dispatch) ; OnClick (fun ev -> MouseClick(ev) |> dispatch) ; ... ] 
+    //we get hundreds of annoying react warnings "Warning: This synthetic event is reused for performance reasons. If you're seeing this, you're accessing the method ..."
     img [ Id "vitruvian"; Src "img/vitruvian-r2.jpg"]
     ]
 let root model dispatch =

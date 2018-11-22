@@ -312,10 +312,39 @@ module p5 =
         member __.connect(unit: obj): unit = jsNative
         member __.disconnect(): unit = jsNative
         member __.amp(volume: float, ?rampTime: float, ?timeFromNow: float): unit = jsNative
+//Start p5.gibber.js
+type [<AllowNullLiteral>]  [<Global>] Clock = 
+    member __.Beats(v:obj) = jsNative
+    member __.Measures( v :obj) = jsNative
+    member __.Time(v:obj) = jsNative
+    member __.addMetronome( metronome :obj) = jsNative
 
+    member __.beats(v:obj) = jsNative
+
+    member __.bpm_() = jsNative
+    member __.callback( rate :obj) = jsNative
+    member __.codeToExecute : obj [] = jsNative
+
+    member __.export( target :obj) = jsNative
+    member __.getPhase() = jsNative
+    member __.getTimeSinceStart() = jsNative
+
+    member __.measures( v :obj) = jsNative
+
+    member __.processBeat() = jsNative
+
+    member __.rate_() = jsNative
+    member __.reset() = jsNative
+
+    member __.setPhase( v :obj) = jsNative
+
+    member __.start( shouldInit :obj) = jsNative
+
+    member __.tap() = jsNative
+    member __.time(v:obj) = jsNative
 
 type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTMLElement, bool>, ?sync: bool) =
-            //Start p5.gibber.js
+        member __.Clock : Clock = jsNative
         member __.AD(args: ResizeArray<obj>): obj = jsNative
         member __.ADSR(args: ResizeArray<obj>): obj = jsNative
         member __.Abs(args: ResizeArray<obj>): obj = jsNative

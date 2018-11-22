@@ -5,7 +5,7 @@ open Fable.Core
 open Fable.Import.JS
 open Fable.Import.Browser
 
-//NOTE: most functions have not been tested
+//NOTE: most functions have not been tested. This was hand written off the docs
 module kinectron =
     type [<AllowNullLiteral>] [<Global>] Data() =
         member __.src with get(): obj = jsNative
