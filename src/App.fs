@@ -14,6 +14,7 @@ open System
 open Fable.PowerPack.Fetch.Fetch_types
 open Fable.Import.React
 
+
 importAll "../sass/main.sass"
 
 //Helpers
@@ -104,14 +105,14 @@ let mapEventSubscription initial =
     Cmd.ofSub sub
 
 
-let GetColors(p : p5) =  //NOTE: string based color apis not working?
+let GetColors( p : p5) =  
   [|
-    p.color( 255.0 |> U2.Case1, 0.0, 0.0);
-    p.color( 0.0 |> U2.Case1, 128.0, 0.0);
-    p.color( 0.0 |> U2.Case1, 0.0, 255.0);
-    p.color( 255.0 |> U2.Case1, 165.0, 0.0);
-    p.color( 255.0 |> U2.Case1, 255.0, 0.0);
-    p.color( 128.0 |> U2.Case1, 0.0, 128.0);
+    p.color( 255.0|> U2.Case1, 0.0, 0.0)
+    p.color( 0.0|> U2.Case1, 128.0, 0.0);
+    p.color( 0.0|> U2.Case1, 0.0, 255.0);
+    p.color( 255.0|> U2.Case1, 165.0, 0.0);
+    p.color(255.0|> U2.Case1, 255.0, 0.0);
+    p.color( 128.0|> U2.Case1, 0.0, 128.0);
   |]
 
 let gibberSketch =
@@ -166,7 +167,7 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
               //display state
               p.fill( 255.0 |> U4.Case1 )
-              p.noStroke()
+              p.noStroke() |> ignore
               p.textSize(20.0 ) |> ignore // |> U2.Case2)
               let rs (f:float) =
                 System.Math.Round(f,1).ToString()
@@ -238,7 +239,7 @@ let update msg model : Model * Cmd<Msg> =
         //since handler must be Func, which is anonymous, we must store a reference in our model to unsubscribe later
         Fable.Import.Browser.window.addEventListener_mousemove moveHandler 
         Fable.Import.Browser.window.addEventListener_click clickHandler 
-        { model with Mode = Mouse; P5 = p5( gibberSketch ); MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
+        { model with Mode = Mouse; P5 = new p5(gibberSketch) ; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
   | MouseMove(x,y) ->
       match (x,y) with
       //update the left hand with a body command
@@ -252,9 +253,10 @@ let update msg model : Model * Cmd<Msg> =
   //TODO: we can't use instance gibber b/c we need it to be global to execute code using the clock
   //at this point I wonder if it would be better to use the DT P5 and pure gibberlib separately
   //For now start with gibberlib separately and see if we can execute the line of code below properly
-      //Gibber.Clock.codeToExecute.push( { code:"Kick().play( 55, Euclid( 5,8 ) )" } )
-    //drums <- p.EDrums("x*o*x*o-")      
-      //model.P5.Clock.codeToExecute.push( %[ "code" => "p5.Kick().play( 55, p5.Euclid( 5,8 ) )" ] )
+ 
+      // Gibber.Gibber.init()
+      // Gibber.Clock.codeToExecute.push( %[ "code" => "Kick().play( 55, Euclid( 5,8 ) )" ] )
+      //Gibber.Clock.codeToExecute.push( %[ "code" => "EDrums('x*o*x*o-')" ] )
 
       match (x,y) with
       //update the right hand with a programming body command
@@ -327,7 +329,7 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-|> Program.withDebugger
+|> Program.withDebugger 
 |> Program.withHMR
 #endif
 |> Program.withReact "elmish-app"
