@@ -36,10 +36,10 @@ In a terminal, run `dotnet fable-elmish-react` to create a project in the curren
 
 ## Building and running the app
 
-* Install JS dependencies: `npm install`
+* Install JS dependencies: `yarn install`
 * **Move to `src` folder**: `cd src`
 * Install F# dependencies: `dotnet restore`
-* Start Fable daemon and [Webpack](https://webpack.js.org/) dev server: `dotnet fable npm-start`
+* Start Fable daemon and [Webpack](https://webpack.js.org/) dev server: `dotnet fable yarn-start`
 * In your browser, open: http://localhost:8080/
 
 > `dotnet fable yarn-start` (or `npm-start`) is used to start the Fable daemon and run a script in package.json concurrently. It's a shortcut of `yarn-run [SCRIP_NAME]`, e.g. `dotnet fable yarn-run start`.

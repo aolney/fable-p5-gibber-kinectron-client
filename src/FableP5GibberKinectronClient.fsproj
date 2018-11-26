@@ -3,7 +3,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Fable.Import.p5.gibber.fs"/>
+    <Compile Include="Fable.Import.Gibber.fs"/>
+    <Compile Include="Fable.Import.p5.fs"/>
     <Compile Include="Fable.Import.kinectron.fs"/>
     <Compile Include="App.fs" />
   </ItemGroup>

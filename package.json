@@ -1,5 +1,5 @@
 {
-  "name": "kinectron_client",
+  "name": "FableP5GibberKinectronClient",
   "version": "1.0.0",
   "description": "Simple Fable App",
   "scripts": {
@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "babel-runtime": "^6.26.0",
+    "gibber.audio.lib": "^0.7.7",
+    "p5": "^0.7.2",
     "react": "^15.6.2",
     "react-dom": "^15.6.2",
     "remotedev": "^0.2.7"

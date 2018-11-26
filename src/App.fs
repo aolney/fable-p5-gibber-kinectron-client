@@ -14,6 +14,7 @@ open System
 open Fable.PowerPack.Fetch.Fetch_types
 open Fable.Import.React
 
+
 importAll "../sass/main.sass"
 
 //Helpers
@@ -63,7 +64,7 @@ type Model =
     KinectronIP : string
     DefaultBody : int
     Bodies : BodyModel []
-    P5 : p5
+    P5 : p5.p5
     Debug : string
   }
  
@@ -77,6 +78,7 @@ type Msg =
   | Body of BodyModel
 
 let init () : Model * Cmd<Msg> =
+  //Gibber.Gibber.init()
   { 
     Mode = Kinect
     MousePosition = 0.0,0.0
@@ -85,7 +87,12 @@ let init () : Model * Cmd<Msg> =
     KinectronIP = "10.101.135.121"//"192.168.128.20"
     DefaultBody = 0
     Bodies = Array.init 6 (fun i -> {Mode=Programming; Id=i; LeftHand=0.0,0.0; RightHand=0.0,0.0})
-    P5 = null
+    P5 = p5.p5.Create( fun o ->
+          let p = o |> unbox<p5.p5>
+          p.setup <- fun() -> () 
+          p.draw <- fun() -> () 
+          //None
+          )
     Debug = ""
   }, []
 
@@ -96,6 +103,9 @@ let mapEvent = Event<Msg>()
 let mapEventSubscription initial =
     let sub dispatch =
         let msgSender msg = 
+            //make a copy to avoid weirdness with React synthetic events
+            // let copy = msg
+            // copy
             msg
             |> dispatch
             
@@ -104,28 +114,34 @@ let mapEventSubscription initial =
     Cmd.ofSub sub
 
 
-let GetColors(p : p5) =  //NOTE: string based color apis not working?
+let GetColors( p5 : p5.p5) =  
   [|
-    p.color( 255.0 |> U2.Case1, 0.0, 0.0);
-    p.color( 0.0 |> U2.Case1, 128.0, 0.0);
-    p.color( 0.0 |> U2.Case1, 0.0, 255.0);
-    p.color( 255.0 |> U2.Case1, 165.0, 0.0);
-    p.color( 255.0 |> U2.Case1, 255.0, 0.0);
-    p.color( 128.0 |> U2.Case1, 0.0, 128.0);
+    p5.color( 255.0, 0.0, 0.0)
+    p5.color( 0.0, 128.0, 0.0);
+    p5.color( 0.0, 0.0, 255.0);
+    p5.color( 255.0, 165.0, 0.0);
+    p5.color(255.0, 255.0, 0.0);
+    p5.color( 128.0, 0.0, 128.0);
   |]
 
-let gibberSketch =
-  new System.Func<obj,unit>(
-        fun o ->
-          let p = o |> unbox<p5>
+let gibberSketch() =
+  p5.p5.Create( fun o ->
+          let p = o |> unbox<p5.p5>
           p.setup <- fun() -> ()
-          p.draw <- fun() -> ()
-  )
+          p.draw <- fun() -> () 
+         // None
+          )
+  // new System.Func<obj,unit>(
+  //       fun o ->
+  //         let p = o |> unbox<p5>
+  //         p.setup <- fun() -> ()
+  //         p.draw <- fun() -> ()
+  // )
 
 let kinectronSketch ip canvasWidth canvasHeight = 
-    new System.Func<obj,unit>(
+    //new System.Func<obj,unit>(
         fun o ->
-            let p = o |> unbox<p5>
+            let p = o |> unbox<p5.p5>
 
             let colors = GetColors(p)
 
@@ -135,19 +151,19 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
             let processFrame(body:kinectron.Body)=
               //We choose not to dispatch Elmish messages for drawing
-              p.background( 0.0 |> U4.Case1 )// , 20.0 ) //blank the background
+              p.background( 0.0 ) |> ignore // , 20.0 ) //blank the background
               for j in body.joints do 
                 //draw closed right hand differently (large white)
                 if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
-                  p.fill( 255.0 |> U4.Case1 )
+                  p.fill( 255.0 ) |> ignore
                   p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
                 //draw closed left hand differently (large white)
                 elif j.jointType = kinectron.HANDLEFT && body.leftHandState = 2 then
-                  p.fill( 255.0 |> U4.Case1 )
+                  p.fill( 255.0 ) |> ignore
                   p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
                 //draw all other joints with body color
                 else
-                  p.fill( colors.[body.bodyIndex] |> U4.Case2 )
+                  p.fill( colors.[body.bodyIndex] ) |> ignore
                   p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
 
               //open hands means rhythm programming; closed means melody live performance
@@ -165,13 +181,13 @@ let kinectronSketch ip canvasWidth canvasHeight =
               let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
 
               //display state
-              p.fill( 255.0 |> U4.Case1 )
-              p.noStroke()
+              p.fill( 255.0 ) |> ignore
+              p.noStroke() |> ignore
               p.textSize(20.0 ) |> ignore // |> U2.Case2)
               let rs (f:float) =
                 System.Math.Round(f,1).ToString()
               
-              p.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
+              //p.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
 
               //Dispatch message for body state
               mapEvent.Trigger ( Msg.Body( {Id=body.bodyIndex; Mode=bodyMode; LeftHand=leftX,leftY; RightHand=rightX,rightY}  ) )
@@ -179,17 +195,18 @@ let kinectronSketch ip canvasWidth canvasHeight =
             //canoncial p5 setup function
             p.setup <- fun() -> 
                 p.createCanvas(canvasWidth, canvasHeight) |> ignore   
-                p.background(0.0 |> U4.Case1 )
+                p.background(0.0) |> ignore // |> U4.Case1 )
                 //textAlign()
-                p.textAlign( p5.Alignment.CENTER )
+                let alignment =  "CENTER"  |> p5.HORIZ_ALIGN.ofCENTER 
+                p.textAlign( alignment ) |> ignore
                 kinectron.startTrackedBodies(processFrame)            
                 ()
 
             //canonical p5 draw function; subsumed by kinectron draw
             p.draw <- fun() -> ()
 
-            ()
-    )
+            //None
+    //)
 
 //let myp5 = p5(  getSketch ) //"192.168.128.20");
 let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
@@ -238,7 +255,7 @@ let update msg model : Model * Cmd<Msg> =
         //since handler must be Func, which is anonymous, we must store a reference in our model to unsubscribe later
         Fable.Import.Browser.window.addEventListener_mousemove moveHandler 
         Fable.Import.Browser.window.addEventListener_click clickHandler 
-        { model with Mode = Mouse; P5 = p5( gibberSketch ); MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
+        { model with Mode = Mouse; P5 = gibberSketch() ; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
   | MouseMove(x,y) ->
       match (x,y) with
       //update the left hand with a body command
@@ -252,9 +269,10 @@ let update msg model : Model * Cmd<Msg> =
   //TODO: we can't use instance gibber b/c we need it to be global to execute code using the clock
   //at this point I wonder if it would be better to use the DT P5 and pure gibberlib separately
   //For now start with gibberlib separately and see if we can execute the line of code below properly
-      //Gibber.Clock.codeToExecute.push( { code:"Kick().play( 55, Euclid( 5,8 ) )" } )
-    //drums <- p.EDrums("x*o*x*o-")      
-      //model.P5.Clock.codeToExecute.push( %[ "code" => "p5.Kick().play( 55, p5.Euclid( 5,8 ) )" ] )
+ 
+      // Gibber.Gibber.init()
+      // Gibber.Clock.codeToExecute.push( %[ "code" => "Kick().play( 55, Euclid( 5,8 ) )" ] )
+      //Gibber.Clock.codeToExecute.push( %[ "code" => "EDrums('x*o*x*o-')" ] )
 
       match (x,y) with
       //update the right hand with a programming body command
@@ -266,7 +284,7 @@ let update msg model : Model * Cmd<Msg> =
       { model with KinectronIP = str}, []
   | ConnectKinectron -> 
     //TODO: we must have a P5 instance to use gibber, so we need it on startup, not on connection; or we need two instances
-      { model with P5 = p5( kinectronSketch model.KinectronIP 700.0 410.0)},[]
+      { model with P5 = p5.p5.Create( kinectronSketch model.KinectronIP 700.0 410.0)},[]
   | Body b ->
     //TODO: ENGAGE GIBBER HERE
 
@@ -327,7 +345,7 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-|> Program.withDebugger
+//|> Program.withDebugger //getting some annoying messages in Chrome
 |> Program.withHMR
 #endif
 |> Program.withReact "elmish-app"

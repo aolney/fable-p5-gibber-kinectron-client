@@ -22,7 +22,7 @@ console.log("Bundling for " + (isProduction ? "production" : "development") + ".
 
 module.exports = {
     devtool: isProduction ? undefined : "source-map",
-    entry: resolve('./src/kinectron_client.fsproj'),
+    entry: resolve('./src/FableP5GibberKinectronClient.fsproj'),
     output: {
         filename: 'bundle.js',
         path: resolve('./public'),
@@ -34,6 +34,7 @@ module.exports = {
     },
     devServer: {
         contentBase: resolve('./public'),
+        host: '0.0.0.0',
         port: 8080,
         hot: true,
         inline: true
