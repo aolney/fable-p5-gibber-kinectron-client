@@ -88,10 +88,10 @@ let gibberInstruments =
     { Name="Kick"; PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; KillCode = "kick.kill(); "}
     { Name="Snare"; PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; KillCode = "snare.kill(); "}
     { Name="Hat Closed"; PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; KillCode = "hatc.kill(); "}
-    { Name="Hat Closed"; PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; KillCode = "hato.kill(); "}
-    //TODO: replace Mouse.Y
-    { Name="Bass"; PlayCode="bass = FM( 'bass' ).note.seq( function(){return Mouse.Y/1000}, Euclid( {0},{1} ) ); "; KillCode = "bass.kill(); "}
-    { Name="Melody"; PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Mouse.X/1000, Mouse.Y/1000, (Mouse.X + Mouse.Y)/1000 ]}, Euclid( {0},{1} ) ); "; KillCode = "melody.kill(); "}
+    { Name="Hat Open"; PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; KillCode = "hato.kill(); "}
+    //TODO: find the doc specifying the magic number below which gibber interprets as notes and above which interprets as frequencies
+    { Name="Bass"; PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(rightMouseY * 40)}, Euclid( {0},{1} ) ); "; KillCode = "bass.kill(); "}
+    { Name="Melody"; PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(rightMouseY * 40),Math.round(rightMouseY * 40), Math.round( (rightMouseY + rightMouseX) * 20) ]}, Euclid( {0},{1} ) ); "; KillCode = "melody.kill(); "}
   |]
 
 let init () : Model * Cmd<Msg> =
@@ -249,10 +249,18 @@ let update msg model : Model * Cmd<Msg> =
         { model with Mode = Mouse; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
   | MouseMove(x,y) ->
       match (x,y) with
-      //update the left hand with a body command
-      | VitruvianLeft (xrel,yrel) ->  { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
-      //update the right hand with a body command
-      | VitruvianRight (xrel,yrel) -> { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
+      | VitruvianLeft (xrel,yrel) ->  
+        //set some global mouse position variables for Gibber
+        Browser.window?leftMouseX <- xrel
+        Browser.window?leftMouseY <- yrel
+        //update the left hand with a body command
+        { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
+      | VitruvianRight (xrel,yrel) -> 
+        //set some global mouse position variables for Gibber
+        Browser.window?rightMouseX <- xrel
+        Browser.window?rightMouseY <- yrel
+        //update the right hand with a body command
+        { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //either the image does not exist or we are outside the vitruvian regions
       | _ -> model, []
 
@@ -343,6 +351,9 @@ let kinectView model dispatch =
     ]
 let mouseView model dispatch =
   div [ ] [ 
+    span [ Style [CSSProp.FontSize 28 ] ] [ 
+      str ( gibberInstruments.[model.InstrumentMap.[model.DefaultBody]].Name )
+      ]
     simpleButton "Change instrument" ChangeInstrument dispatch
     span [ Style [CSSProp.FontSize 28 ] ] [ 
       str "Move your mouse to adjust parameters within each red region. To program and lock in a rhythm, click the mouse." 
