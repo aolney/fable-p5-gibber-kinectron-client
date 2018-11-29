@@ -682,9 +682,9 @@ module p5 =
         member __.masterVolume(volume: U2<float, obj>, ?rampTime: float, ?timeFromNow: float): unit = jsNative
         member __.sampleRate(): float = jsNative
         member __.midiToFreq(midiNote: float): float = jsNative
-    
 
     //Global mode
+    //p5 global
     //TODO some attempts at global setup/draw for p5 below; ended up using dynamic b/c these didn't work
     // type Fable.Import.Browser.Window with
     //     member __.setup with get(): (obj) = jsNative and set(v: obj): unit = jsNative  
@@ -694,6 +694,7 @@ module p5 =
     // let mutable setup : (unit -> unit) = jsNative
     // [<Global>]
     // let mutable draw  : (unit -> unit) = jsNative
+
     [<Global>]
     let color(v1: float, v2: float, v3: float ): ResizeArray<obj> = jsNative
     [<Global>]
@@ -717,7 +718,11 @@ module p5 =
     [<Global>]
     let mouseY : float = jsNative
 
-    //Gibber
+    //Gibber global
+    [<Global>]
+    type Gibber =
+        static member init() : unit = jsNative
+        static member Clock with get(): Clock = jsNative
     [<Global>]
     let Clock : Clock = jsNative
     [<Global>]

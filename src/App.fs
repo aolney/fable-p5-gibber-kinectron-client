@@ -50,10 +50,6 @@ type BodyModel =
     RightHand : float * float
   }
 
-// [<Pojo>]
-// type GibberCode = {
-//   code : string
-// }
 
 type Model = 
   {
@@ -64,6 +60,7 @@ type Model =
     KinectronIP : string
     DefaultBody : int
     Bodies : BodyModel []
+    InstrumentMap : int []
     Debug : string
   }
  
@@ -75,7 +72,27 @@ type Msg =
   | ChangeIPStr of string
   | ConnectKinectron 
   | Body of BodyModel
-  | Debug
+  | ChangeInstrument
+  | Debug of string
+
+type GibberInstrument =
+  {
+    Name : string
+    PlayCode : string
+    KillCode : string
+  }
+
+let gibberInstruments = 
+  [|
+    //TODO: add effects
+    { Name="Kick"; PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; KillCode = "kick.kill(); "}
+    { Name="Snare"; PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; KillCode = "snare.kill(); "}
+    { Name="Hat Closed"; PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; KillCode = "hatc.kill(); "}
+    { Name="Hat Closed"; PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; KillCode = "hato.kill(); "}
+    //TODO: replace Mouse.Y
+    { Name="Bass"; PlayCode="bass = FM( 'bass' ).note.seq( function(){return Mouse.Y/1000}, Euclid( {0},{1} ) ); "; KillCode = "bass.kill(); "}
+    { Name="Melody"; PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Mouse.X/1000, Mouse.Y/1000, (Mouse.X + Mouse.Y)/1000 ]}, Euclid( {0},{1} ) ); "; KillCode = "melody.kill(); "}
+  |]
 
 let init () : Model * Cmd<Msg> =
   { 
@@ -86,8 +103,9 @@ let init () : Model * Cmd<Msg> =
     KinectronIP = "10.101.135.121"//"192.168.128.20"
     DefaultBody = 0
     Bodies = Array.init 6 (fun i -> {Mode=Programming; Id=i; LeftHand=0.0,0.0; RightHand=0.0,0.0})
+    InstrumentMap = Array.init 6 ( fun i -> i)
     Debug = ""
-  }, Debug |> Cmd.ofMsg
+  }, [] 
 
 //Update
 //-----------------------------------------------------------------------------
@@ -114,82 +132,72 @@ let GetColors() =
     p5.color( 128.0, 0.0, 128.0);
   |]
 
-// let gibberSketch =
-//   new System.Func<obj,unit>(
-//         fun o ->
-//           let p = o |> unbox<p5>
-//           p.setup <- fun() -> ()
-//           p.draw <- fun() -> ()
-//   )
-
+//Process a kinectron data frame as a P5 sketch
 let kinectronSketch ip canvasWidth canvasHeight = 
-    // new System.Func<obj,unit>(
-    //     fun o ->
-    //         let p = o |> unbox<p5>
+  let colors = GetColors()
 
-            let colors = GetColors()
+  //Set  up kinnectron
+  let kinectron = new Kinectron( ip )
+  kinectron.makeConnection()
 
-            //Set  up kinnectron
-            let kinectron = new Kinectron( ip )
-            kinectron.makeConnection()
+  let processFrame(body:kinectron.Body)=
+    //We choose not to dispatch Elmish messages for drawing
+    p5.background( 0.0 )// , 20.0 ) //blank the background
+    for j in body.joints do 
+      //draw closed right hand differently (large white)
+      if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
+        p5.fill( 255.0 |> U4.Case1 )
+        p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
+      //draw closed left hand differently (large white)
+      elif j.jointType = kinectron.HANDLEFT && body.leftHandState = 2 then
+        p5.fill( 255.0 |> U4.Case1 )
+        p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
+      //draw all other joints with body color
+      else
+        p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
+        p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
 
-            let processFrame(body:kinectron.Body)=
-              //We choose not to dispatch Elmish messages for drawing
-              p5.background( 0.0 )// , 20.0 ) //blank the background
-              for j in body.joints do 
-                //draw closed right hand differently (large white)
-                if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
-                  p5.fill( 255.0 |> U4.Case1 )
-                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
-                //draw closed left hand differently (large white)
-                elif j.jointType = kinectron.HANDLEFT && body.leftHandState = 2 then
-                  p5.fill( 255.0 |> U4.Case1 )
-                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
-                //draw all other joints with body color
-                else
-                  p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
-                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
+    //open hands means rhythm programming; closed means melody live performance
+    let bodyMode = 
+      if body.rightHandState = 2 && body.leftHandState = 2 then  
+        BodyMode.Performance
+      else
+        BodyMode.Programming
 
-              //open hands means rhythm programming; closed means melody live performance
-              let bodyMode = 
-                if body.rightHandState = 2 && body.leftHandState = 2 then  
-                  BodyMode.Performance
-                else
-                  BodyMode.Programming
+    //Construct body relative coordinates based on shoulder width
+    let width = body.joints.[kinectron.SHOULDERLEFT].depthX - body.joints.[kinectron.SHOULDERRIGHT].depthX 
+    let leftX = ( body.joints.[kinectron.HANDLEFT].depthX - body.joints.[kinectron.SHOULDERLEFT].depthX )/(width * 2.0) 
+    let leftY = ( body.joints.[kinectron.HANDLEFT].depthY - body.joints.[kinectron.SPINEBASE].depthY )/(width * 3.0) 
+    let rightX = (body.joints.[kinectron.SHOULDERRIGHT].depthX - body.joints.[kinectron.HANDRIGHT].depthX)/(width * 2.0) 
+    let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
 
-              //Construct body relative coordinates based on shoulder width
-              let width = body.joints.[kinectron.SHOULDERLEFT].depthX - body.joints.[kinectron.SHOULDERRIGHT].depthX 
-              let leftX = ( body.joints.[kinectron.HANDLEFT].depthX - body.joints.[kinectron.SHOULDERLEFT].depthX )/(width * 2.0) 
-              let leftY = ( body.joints.[kinectron.HANDLEFT].depthY - body.joints.[kinectron.SPINEBASE].depthY )/(width * 3.0) 
-              let rightX = (body.joints.[kinectron.SHOULDERRIGHT].depthX - body.joints.[kinectron.HANDRIGHT].depthX)/(width * 2.0) 
-              let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
+    //display state
+    p5.fill( 255.0 |> U4.Case1 )
+    p5.noStroke() |> ignore
+    p5.textSize(20.0 ) |> ignore // |> U2.Case2)
+    let rs (f:float) =
+      System.Math.Round(f,1).ToString()
+    
+    p5.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
 
-              //display state
-              p5.fill( 255.0 |> U4.Case1 )
-              p5.noStroke() |> ignore
-              p5.textSize(20.0 ) |> ignore // |> U2.Case2)
-              let rs (f:float) =
-                System.Math.Round(f,1).ToString()
-              
-              p5.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
+    //Dispatch message for body state
+    mapEvent.Trigger ( Msg.Body( {Id=body.bodyIndex; Mode=bodyMode; LeftHand=leftX,leftY; RightHand=rightX,rightY}  ) )
 
-              //Dispatch message for body state
-              mapEvent.Trigger ( Msg.Body( {Id=body.bodyIndex; Mode=bodyMode; LeftHand=leftX,leftY; RightHand=rightX,rightY}  ) )
-
-            //canoncial p5 setup function
-            //p5.setup <- fun() -> 
-            Browser.window?setup <- fun() -> 
-                p5.createCanvas(canvasWidth, canvasHeight) |> ignore   
-                p5.background(0.0 )
-                //textAlign()
-                p5.textAlign( p5.Alignment.CENTER )
-                kinectron.startTrackedBodies(processFrame)            
+  //canoncial p5 setup function
+  Browser.window?setup <- fun() -> 
+      p5.createCanvas(canvasWidth, canvasHeight) |> ignore   
+      p5.background(0.0 )
+      p5.textAlign( p5.Alignment.CENTER )
+      kinectron.startTrackedBodies(processFrame)            
 
 
-            //canonical p5 draw function; subsumed by kinectron draw
-            Browser.window?setup <- fun() -> ()
-            //p5.draw <- fun() -> ()
+  //canonical p5 draw function; subsumed by kinectron draw
+  Browser.window?setup <- fun() -> ()
 
+
+//Does not play immediately but rather waits until muscially appropriate (?next measure?)
+let gibberPlay( code : string ) =
+  p5.Gibber.Clock.codeToExecute.push( %[ "code"=> code ] )
 
 //let myp5 = p5(  getSketch ) //"192.168.128.20");
 let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
@@ -249,48 +257,62 @@ let update msg model : Model * Cmd<Msg> =
       | _ -> model, []
 
   | MouseClick(x,y) ->
-  //TODO: we can't use instance gibber b/c we need it to be global to execute code using the clock
-  //at this point I wonder if it would be better to use the DT P5 and pure gibberlib separately
-  //For now start with gibberlib separately and see if we can execute the line of code below properly
- 
-      // Gibber.Gibber.init()
-      // Gibber.Clock.codeToExecute.push( %[ "code" => "Kick().play( 55, Euclid( 5,8 ) )" ] )
-      //Gibber.Clock.codeToExecute.push( %[ "code" => "EDrums('x*o*x*o-')" ] )
-
       match (x,y) with
       //update the right hand with a programming body command
       | VitruvianRight (xrel,yrel) -> { model with MousePosition = x,y;Debug = ("mouse click " + x.ToString() + " " + y.ToString() ) }, Msg.Body( {Id=model.DefaultBody; Mode=Programming ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //ignore all other cases
       | _ -> model,[]
-    //{ model with Debug = ("mouse click " + x.ToString() + " " + y.ToString() ) }, []
   | ChangeIPStr str ->
       { model with KinectronIP = str}, []
   | ConnectKinectron -> 
       kinectronSketch model.KinectronIP 700.0 410.0
       model,[]
   | Body b ->
-    //TODO: ENGAGE GIBBER HERE
+    //TODO: This message seems to happen without clicking
+    let mutable debug = ""
+    match b.Mode with
+    | Programming -> 
+        let x,y = b.RightHand
+        let sx,sy = Math.Round(x * 16.0),Math.Round(y * 16.0) //NOTE: 16 is an arbitrary scaling factor
+        let instrument = gibberInstruments.[ model.InstrumentMap.[b.Id] ]
+        let playWithRhythm = String.Format( instrument.PlayCode, sx, sy )
+        debug <- sx.ToString() + ":" + sy.ToString() + ":" + instrument.Name
+        gibberPlay ( instrument.KillCode ) //this will throw a harmless error if the instrument is not defined
+        gibberPlay ( playWithRhythm )
+        
+    | Performance -> ()
 
+    //access the model's body array to update this body, turning off programming mode
     let newBodies = model.Bodies
-    newBodies.[b.Id] <- b
-    { model with Bodies = newBodies},[]
-      //{ model with Debug = unbox<string>(bodyModel) }, []
-      //model, []
-  | Debug ->
-    //p5.setup <- fun() -> 
-    Browser.window?setup <- fun() -> 
-        (
-          p5.createCanvas(600.0, 400.0) |> ignore   
-          p5.background(0.0 )
-        )
-    //p5.draw <- fun() -> 
-    Browser.window?draw <- fun() -> 
-        (
-          p5.fill( 255.0 |> U4.Case1 )
-          p5.ellipse( p5.mouseX ,  p5.mouseY , 30.0,30.0) |> ignore
-          //p5.ellipse( unbox<float>(Browser.window?mouseX),  unbox<float>(Browser.window?mouseY), 30.0,30.0) |> ignore
-        )
-    model,[]
+    newBodies.[b.Id] <- {b with Mode=Performance}
+    { model with Bodies = newBodies}, Debug( debug ) |> Cmd.ofMsg
+
+  | ChangeInstrument ->
+    //shift in circular array style
+    let len =  model.InstrumentMap.Length
+    let newMap = Array.create len 0
+    newMap.[len-1] <- model.InstrumentMap.[0]
+    for i = 0 to len - 2 do
+        newMap.[i] <- model.InstrumentMap.[i+1]
+    { model with InstrumentMap = newMap},[]
+  | Debug x ->
+
+    {model with Debug=x},[]
+  
+
+    //P5 global instance initialization
+    // Browser.window?setup <- fun() -> 
+    //     (
+    //       p5.createCanvas(600.0, 400.0) |> ignore   
+    //       p5.background(0.0 )
+    //     )
+    // //p5.draw <- fun() -> 
+    // Browser.window?draw <- fun() -> 
+    //     (
+    //       p5.fill( 255.0 |> U4.Case1 )
+    //       p5.ellipse( p5.mouseX ,  p5.mouseY , 30.0,30.0) |> ignore
+    //       //p5.ellipse( unbox<float>(Browser.window?mouseX),  unbox<float>(Browser.window?mouseY), 30.0,30.0) |> ignore
+    //     )
 
 //View
 //-----------------------------------------------------------------------------
@@ -321,6 +343,7 @@ let kinectView model dispatch =
     ]
 let mouseView model dispatch =
   div [ ] [ 
+    simpleButton "Change instrument" ChangeInstrument dispatch
     span [ Style [CSSProp.FontSize 28 ] ] [ 
       str "Move your mouse to adjust parameters within each red region. To program and lock in a rhythm, click the mouse." 
       ]
