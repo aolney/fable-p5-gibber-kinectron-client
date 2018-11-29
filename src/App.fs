@@ -64,7 +64,6 @@ type Model =
     KinectronIP : string
     DefaultBody : int
     Bodies : BodyModel []
-    P5 : p5
     Debug : string
   }
  
@@ -76,6 +75,7 @@ type Msg =
   | ChangeIPStr of string
   | ConnectKinectron 
   | Body of BodyModel
+  | Debug
 
 let init () : Model * Cmd<Msg> =
   { 
@@ -86,9 +86,8 @@ let init () : Model * Cmd<Msg> =
     KinectronIP = "10.101.135.121"//"192.168.128.20"
     DefaultBody = 0
     Bodies = Array.init 6 (fun i -> {Mode=Programming; Id=i; LeftHand=0.0,0.0; RightHand=0.0,0.0})
-    P5 = null
     Debug = ""
-  }, []
+  }, Debug |> Cmd.ofMsg
 
 //Update
 //-----------------------------------------------------------------------------
@@ -105,30 +104,30 @@ let mapEventSubscription initial =
     Cmd.ofSub sub
 
 
-let GetColors( p : p5) =  
+let GetColors() =  
   [|
-    p.color( 255.0|> U2.Case1, 0.0, 0.0)
-    p.color( 0.0|> U2.Case1, 128.0, 0.0);
-    p.color( 0.0|> U2.Case1, 0.0, 255.0);
-    p.color( 255.0|> U2.Case1, 165.0, 0.0);
-    p.color(255.0|> U2.Case1, 255.0, 0.0);
-    p.color( 128.0|> U2.Case1, 0.0, 128.0);
+    p5.color( 255.0, 0.0, 0.0)
+    p5.color( 0.0, 128.0, 0.0);
+    p5.color( 0.0, 0.0, 255.0);
+    p5.color( 255.0, 165.0, 0.0);
+    p5.color(255.0, 255.0, 0.0);
+    p5.color( 128.0, 0.0, 128.0);
   |]
 
-let gibberSketch =
-  new System.Func<obj,unit>(
-        fun o ->
-          let p = o |> unbox<p5>
-          p.setup <- fun() -> ()
-          p.draw <- fun() -> ()
-  )
+// let gibberSketch =
+//   new System.Func<obj,unit>(
+//         fun o ->
+//           let p = o |> unbox<p5>
+//           p.setup <- fun() -> ()
+//           p.draw <- fun() -> ()
+//   )
 
 let kinectronSketch ip canvasWidth canvasHeight = 
-    new System.Func<obj,unit>(
-        fun o ->
-            let p = o |> unbox<p5>
+    // new System.Func<obj,unit>(
+    //     fun o ->
+    //         let p = o |> unbox<p5>
 
-            let colors = GetColors(p)
+            let colors = GetColors()
 
             //Set  up kinnectron
             let kinectron = new Kinectron( ip )
@@ -136,20 +135,20 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
             let processFrame(body:kinectron.Body)=
               //We choose not to dispatch Elmish messages for drawing
-              p.background( 0.0 |> U4.Case1 )// , 20.0 ) //blank the background
+              p5.background( 0.0 )// , 20.0 ) //blank the background
               for j in body.joints do 
                 //draw closed right hand differently (large white)
                 if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
-                  p.fill( 255.0 |> U4.Case1 )
-                  p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
+                  p5.fill( 255.0 |> U4.Case1 )
+                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
                 //draw closed left hand differently (large white)
                 elif j.jointType = kinectron.HANDLEFT && body.leftHandState = 2 then
-                  p.fill( 255.0 |> U4.Case1 )
-                  p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
+                  p5.fill( 255.0 |> U4.Case1 )
+                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
                 //draw all other joints with body color
                 else
-                  p.fill( colors.[body.bodyIndex] |> U4.Case2 )
-                  p.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
+                  p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
+                  p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
 
               //open hands means rhythm programming; closed means melody live performance
               let bodyMode = 
@@ -166,31 +165,31 @@ let kinectronSketch ip canvasWidth canvasHeight =
               let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
 
               //display state
-              p.fill( 255.0 |> U4.Case1 )
-              p.noStroke() |> ignore
-              p.textSize(20.0 ) |> ignore // |> U2.Case2)
+              p5.fill( 255.0 |> U4.Case1 )
+              p5.noStroke() |> ignore
+              p5.textSize(20.0 ) |> ignore // |> U2.Case2)
               let rs (f:float) =
                 System.Math.Round(f,1).ToString()
               
-              p.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
+              p5.text( bodyMode.ToString() + " " + rs(leftX) + "," + rs(leftY) + "|" + rs(rightX) + "," + rs(rightY), body.joints.[kinectron.SHOULDERLEFT].depthX * canvasWidth, body.joints.[3].depthY * canvasHeight, 200.0,200.0  ) |> ignore
 
               //Dispatch message for body state
               mapEvent.Trigger ( Msg.Body( {Id=body.bodyIndex; Mode=bodyMode; LeftHand=leftX,leftY; RightHand=rightX,rightY}  ) )
 
             //canoncial p5 setup function
-            p.setup <- fun() -> 
-                p.createCanvas(canvasWidth, canvasHeight) |> ignore   
-                p.background(0.0 |> U4.Case1 )
+            //p5.setup <- fun() -> 
+            Browser.window?setup <- fun() -> 
+                p5.createCanvas(canvasWidth, canvasHeight) |> ignore   
+                p5.background(0.0 )
                 //textAlign()
-                p.textAlign( p5.Alignment.CENTER )
+                p5.textAlign( p5.Alignment.CENTER )
                 kinectron.startTrackedBodies(processFrame)            
-                ()
+
 
             //canonical p5 draw function; subsumed by kinectron draw
-            p.draw <- fun() -> ()
+            Browser.window?setup <- fun() -> ()
+            //p5.draw <- fun() -> ()
 
-            ()
-    )
 
 //let myp5 = p5(  getSketch ) //"192.168.128.20");
 let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
@@ -239,7 +238,7 @@ let update msg model : Model * Cmd<Msg> =
         //since handler must be Func, which is anonymous, we must store a reference in our model to unsubscribe later
         Fable.Import.Browser.window.addEventListener_mousemove moveHandler 
         Fable.Import.Browser.window.addEventListener_click clickHandler 
-        { model with Mode = Mouse; P5 = new p5(gibberSketch) ; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
+        { model with Mode = Mouse; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler }, []
   | MouseMove(x,y) ->
       match (x,y) with
       //update the left hand with a body command
@@ -267,8 +266,8 @@ let update msg model : Model * Cmd<Msg> =
   | ChangeIPStr str ->
       { model with KinectronIP = str}, []
   | ConnectKinectron -> 
-    //TODO: we must have a P5 instance to use gibber, so we need it on startup, not on connection; or we need two instances
-      { model with P5 = p5( kinectronSketch model.KinectronIP 700.0 410.0)},[]
+      kinectronSketch model.KinectronIP 700.0 410.0
+      model,[]
   | Body b ->
     //TODO: ENGAGE GIBBER HERE
 
@@ -277,21 +276,41 @@ let update msg model : Model * Cmd<Msg> =
     { model with Bodies = newBodies},[]
       //{ model with Debug = unbox<string>(bodyModel) }, []
       //model, []
+  | Debug ->
+    //p5.setup <- fun() -> 
+    Browser.window?setup <- fun() -> 
+        (
+          p5.createCanvas(600.0, 400.0) |> ignore   
+          p5.background(0.0 )
+        )
+    //p5.draw <- fun() -> 
+    Browser.window?draw <- fun() -> 
+        (
+          p5.fill( 255.0 |> U4.Case1 )
+          p5.ellipse( p5.mouseX ,  p5.mouseY , 30.0,30.0) |> ignore
+          //p5.ellipse( unbox<float>(Browser.window?mouseX),  unbox<float>(Browser.window?mouseY), 30.0,30.0) |> ignore
+        )
+    model,[]
 
 //View
 //-----------------------------------------------------------------------------
 let simpleButton txt action dispatch =
     div [ ClassName "column is-narrow" ] [ 
       a [ ClassName "button" 
-          Style [CSSProp.FontSize 28 ]
+          //Style [CSSProp.FontSize 28 ]
           OnClick (fun _ -> action |> dispatch) ]
         [ str txt ] 
       ]
+let button txt action dispatch =
+  Fable.Helpers.React.button [
+    ClassName "button" 
+    OnClick (fun _ -> action |> dispatch)  ] [  str txt ]
+
 
 let kinectView model dispatch =
   div [ ] [ 
     input [ ClassName "input"
-            Style [CSSProp.FontSize 28 ]
+            //Style [CSSProp.FontSize 28 ]
             //Type "text"
             Placeholder "Type Kinectron IP Address"
             DefaultValue model.KinectronIP
@@ -329,7 +348,7 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-|> Program.withDebugger 
+//|> Program.withDebugger 
 |> Program.withHMR
 #endif
 |> Program.withReact "elmish-app"

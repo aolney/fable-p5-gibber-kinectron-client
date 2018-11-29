@@ -13,7 +13,12 @@
     <!-- doing same with kinectron client library; seems to assume browser is global  -->
   <script src="kinectron.bundle.js"></script>
   <!-- gibber.audio.lib.js is missing an implementation of Euclid, so I took the one from http://gibber.cc -->
-  <script src="Euclid.js"></script>
+  <!-- <script src="Euclid.js"></script> -->
+  <!-- If setup and draw aren't defined, then p5 reverts to instance mode -->
+  <script>
+    function setup() {}
+    function draw() {}
+  </script>
   <script src="https://cdn.polyfill.io/v2/polyfill.js?features=es6"></script>
 </head>
 <body>
