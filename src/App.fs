@@ -80,18 +80,58 @@ type GibberInstrument =
     Name : string
     PlayCode : string
     KillCode : string
+    CreateEffectCode : string
+    UpdateEffectCode : string
   }
 
+//TODO: make effects controls like Euclid
+//Code executed to control gibber instruments. Defined this way to make use of gibber's synchronization mechanism (codeToExecute; see documentation)
 let gibberInstruments = 
   [|
-    //TODO: add effects
-    { Name="Kick"; PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; KillCode = "kick.kill(); "}
-    { Name="Snare"; PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; KillCode = "snare.kill(); "}
-    { Name="Hat Closed"; PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; KillCode = "hatc.kill(); "}
-    { Name="Hat Open"; PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; KillCode = "hato.kill(); "}
-    //TODO: find the doc specifying the magic number below which gibber interprets as notes and above which interprets as frequencies
-    { Name="Bass"; PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(rightMouseY * 40)}, Euclid( {0},{1} ) ); "; KillCode = "bass.kill(); "}
-    { Name="Melody"; PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(rightMouseY * 40),Math.round(rightMouseY * 40), Math.round( (rightMouseY + rightMouseX) * 20) ]}, Euclid( {0},{1} ) ); "; KillCode = "melody.kill(); "}
+    { 
+      Name="Kick"; 
+      PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; 
+      KillCode = "kick.kill(); "
+      CreateEffectCode = "hpf = HPF(); hpf.cutoff=LeftMouseX; kick.fx.add(hpf); reverb = Reverb(); reverb.roomSize=LeftMouseY; kick.fx.add(reverb); "
+      UpdateEffectCode = "hpf.cutoff=LeftMouseX; reverb.roomSize=LeftMouseY; "
+    }
+    //?kick.fx.remove() on kill?
+    { 
+      Name="Snare"; 
+      PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; 
+      KillCode = "snare.kill(); "
+      CreateEffectCode = "snare.attack=LeftMouseX; snare.decay=LeftMouseY; "
+      UpdateEffectCode = "snare.attack=LeftMouseX; snare.decay=LeftMouseY; "
+    }
+    { 
+      Name="Hat Closed"; 
+      PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; 
+      KillCode = "hatc.kill(); "
+      CreateEffectCode = "flanger=Flanger(); flanger.rate=LeftMouseY; flanger.amount=LeftMouseY; flanger.feedback=LeftMouseY; hatc.fx.add(flanger); lpf=LPF(); lpf.cutoff=LeftMouseX; hatc.fx.add(lpf); hatc.amp=6; "
+      UpdateEffectCode = "flanger.rate=LeftMouseY; flanger.amount=LeftMouseY; flanger.feedback=LeftMouseY; lpf.cutoff=LeftMouseX; "
+    }
+    { 
+      Name="Hat Open"; 
+      PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; 
+      KillCode = "hato.kill(); "
+      CreateEffectCode = "ringmod=RingMod(); ringmod.frequency=LeftMouseY; ringmod.amp=LeftMouseX; hato.fx.add(ringmod); hpf2=HPF(); hpf2.cutoff=LeftMouseX; hato.fx.add(hpf2); "
+      UpdateEffectCode = "ringmod.frequency=LeftMouseY; ringmod.amp=LeftMouseX; hpf2.cutoff=LeftMouseX; "
+    }
+    //TODO: find the doc specifying the magic number below which gibber interprets as notes and above which interprets as frequencies (guess to be in 40-50 range)
+    { 
+      Name="Bass"; 
+      PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(RightMouseY * 40)}, Euclid( {0},{1} ) ); "; 
+      KillCode = "bass.kill(); "
+      CreateEffectCode = "crush=Crush(); crush.bitDepth=LeftMouseX; crush.sampleRate=LeftMouseY; bass.fx.add(crush); bass.amp=LeftMouseX; "
+      UpdateEffectCode = "crush.bitDepth=LeftMouseX; crush.sampleRate=LeftMouseY; bass.amp=LeftMouseX; "
+    }
+    { 
+      Name="Melody"; 
+      PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(RightMouseY * 20),Math.round(RightMouseY * 20), Math.round( (RightMouseY + RightMouseX) * 10) ]}, Euclid( {0},{1} ) ); "; 
+      KillCode = "melody.kill(); "
+      CreateEffectCode = "melody.cutoff=(1-LeftMouseX)/2; melody.resonance=(1- LeftMouseY)*5; "
+      UpdateEffectCode = "melody.cutoff=(1-LeftMouseX)/2; melody.resonance=(1- LeftMouseY)*5; "
+    }
   |]
 
 let init () : Model * Cmd<Msg> =
@@ -196,8 +236,11 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
 
 //Does not play immediately but rather waits until muscially appropriate (?next measure?)
-let gibberPlay( code : string ) =
+let gibberPlayDelayed( code : string ) =
   p5.Gibber.Clock.codeToExecute.push( %[ "code"=> code ] )
+
+let gibberPlayImmediate( code: string) =
+  Browser.window?eval(code) |> ignore
 
 //let myp5 = p5(  getSketch ) //"192.168.128.20");
 let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
@@ -251,14 +294,14 @@ let update msg model : Model * Cmd<Msg> =
       match (x,y) with
       | VitruvianLeft (xrel,yrel) ->  
         //set some global mouse position variables for Gibber
-        Browser.window?leftMouseX <- xrel
-        Browser.window?leftMouseY <- yrel
+        Browser.window?LeftMouseX <- xrel
+        Browser.window?LeftMouseY <- yrel
         //update the left hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
       | VitruvianRight (xrel,yrel) -> 
         //set some global mouse position variables for Gibber
-        Browser.window?rightMouseX <- xrel
-        Browser.window?rightMouseY <- yrel
+        Browser.window?RightMouseX <- xrel
+        Browser.window?RightMouseY <- yrel
         //update the right hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //either the image does not exist or we are outside the vitruvian regions
@@ -276,19 +319,24 @@ let update msg model : Model * Cmd<Msg> =
       kinectronSketch model.KinectronIP 700.0 410.0
       model,[]
   | Body b ->
-    //TODO: This message seems to happen without clicking
+    let instrument = gibberInstruments.[ model.InstrumentMap.[b.Id] ]
+    //TODO: This message seems to happen without clicking on load sometimes
     let mutable debug = ""
     match b.Mode with
     | Programming -> 
-        let x,y = b.RightHand
-        let sx,sy = Math.Round(x * 16.0),Math.Round(y * 16.0) //NOTE: 16 is an arbitrary scaling factor
-        let instrument = gibberInstruments.[ model.InstrumentMap.[b.Id] ]
-        let playWithRhythm = String.Format( instrument.PlayCode, sx, sy )
-        debug <- sx.ToString() + ":" + sy.ToString() + ":" + instrument.Name
-        gibberPlay ( instrument.KillCode ) //this will throw a harmless error if the instrument is not defined
-        gibberPlay ( playWithRhythm )
-        
-    | Performance -> ()
+      let x,y = b.RightHand
+      let sx,sy = Math.Round(x * 16.0),Math.Round(y * 16.0) //NOTE: arbitrary limit to 16th notes
+      let playWithRhythm = String.Format( instrument.PlayCode, sx, sy )
+      debug <- sx.ToString() + ":" + sy.ToString() + ":" + instrument.Name
+      gibberPlayDelayed ( instrument.KillCode ) //this will throw a harmless error if the instrument is not defined
+      gibberPlayDelayed ( playWithRhythm )
+      gibberPlayDelayed ( instrument.CreateEffectCode )
+    //Left hand performance is effects and requires updating those based on x/y coordinates
+    //This appears to be unnecessary for right hand because the pitches are functions   
+    //For whatever reason, similar functions do not appear to work for effects.
+    | Performance -> 
+      gibberPlayImmediate ( instrument.UpdateEffectCode )
+      //TODO: ryhthm and effects are handled different ways - we are creating globals in js for effects/mouse. Do we need to? Why can't we inject same as Euclid?
 
     //access the model's body array to update this body, turning off programming mode
     let newBodies = model.Bodies
