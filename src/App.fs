@@ -92,45 +92,45 @@ let gibberInstruments =
       Name="Kick"; 
       PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; 
       KillCode = "kick.kill(); "
-      CreateEffectCode = "hpf = HPF(); hpf.cutoff=LeftMouseX; kick.fx.add(hpf); reverb = Reverb(); reverb.roomSize=LeftMouseY; kick.fx.add(reverb); "
-      UpdateEffectCode = "hpf.cutoff=LeftMouseX; reverb.roomSize=LeftMouseY; "
+      CreateEffectCode = "hpf = HPF(); hpf.cutoff=LeftMouseX/10; kick.fx.add(hpf); reverb = Reverb(); reverb.roomSize=LeftMouseY; kick.fx.add(reverb); "
+      UpdateEffectCode = "hpf.cutoff=LeftMouseX/10; reverb.roomSize=LeftMouseY; "
     }
     //?kick.fx.remove() on kill?
     { 
       Name="Snare"; 
       PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; 
       KillCode = "snare.kill(); "
-      CreateEffectCode = "snare.attack=LeftMouseX; snare.decay=LeftMouseY; "
-      UpdateEffectCode = "snare.attack=LeftMouseX; snare.decay=LeftMouseY; "
+      CreateEffectCode = "snare.snappy=LeftMouseX; snare.decay=LeftMouseY*20000; "
+      UpdateEffectCode = "snare.snappy=LeftMouseX; snare.decay=LeftMouseY*20000; "
     }
     { 
       Name="Hat Closed"; 
       PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; 
       KillCode = "hatc.kill(); "
-      CreateEffectCode = "flanger=Flanger(); flanger.rate=LeftMouseY; flanger.amount=LeftMouseY; flanger.feedback=LeftMouseY; hatc.fx.add(flanger); lpf=LPF(); lpf.cutoff=LeftMouseX; hatc.fx.add(lpf); hatc.amp=6; "
-      UpdateEffectCode = "flanger.rate=LeftMouseY; flanger.amount=LeftMouseY; flanger.feedback=LeftMouseY; lpf.cutoff=LeftMouseX; "
+      CreateEffectCode = "flanger=Flanger(); flanger.rate=LeftMouseY*20; flanger.amount=LeftMouseY*300; flanger.feedback=LeftMouseY; hatc.fx.add(flanger); lpf=LPF(); lpf.cutoff=1-LeftMouseX/2; hatc.fx.add(lpf); hatc.amp=6; "
+      UpdateEffectCode = "flanger.rate=LeftMouseY*20; flanger.amount=LeftMouseY*300; flanger.feedback=LeftMouseY; lpf.cutoff=1-LeftMouseX/2; "
     }
     { 
       Name="Hat Open"; 
       PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; 
       KillCode = "hato.kill(); "
-      CreateEffectCode = "ringmod=RingMod(); ringmod.frequency=LeftMouseY; ringmod.amp=LeftMouseX; hato.fx.add(ringmod); hpf2=HPF(); hpf2.cutoff=LeftMouseX; hato.fx.add(hpf2); "
-      UpdateEffectCode = "ringmod.frequency=LeftMouseY; ringmod.amp=LeftMouseX; hpf2.cutoff=LeftMouseX; "
+      CreateEffectCode = "ringmod=RingMod(); ringmod.frequency=LeftMouseY*3000; ringmod.amp=LeftMouseX; hato.fx.add(ringmod); hpf2=HPF(); hpf2.cutoff=LeftMouseX/2; hato.fx.add(hpf2); "
+      UpdateEffectCode = "ringmod.frequency=LeftMouseY*3000; ringmod.amp=LeftMouseX; hpf2.cutoff=LeftMouseX/2; "
     }
     //TODO: find the doc specifying the magic number below which gibber interprets as notes and above which interprets as frequencies (guess to be in 40-50 range)
     { 
       Name="Bass"; 
-      PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(RightMouseY * 40)}, Euclid( {0},{1} ) ); "; 
+      PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(RightMouseY * 20)}, Euclid( {0},{1} ) ); "; 
       KillCode = "bass.kill(); "
-      CreateEffectCode = "crush=Crush(); crush.bitDepth=LeftMouseX; crush.sampleRate=LeftMouseY; bass.fx.add(crush); bass.amp=LeftMouseX; "
-      UpdateEffectCode = "crush.bitDepth=LeftMouseX; crush.sampleRate=LeftMouseY; bass.amp=LeftMouseX; "
+      CreateEffectCode = "crush=Crush(); crush.bitDepth=LeftMouseX*16; crush.sampleRate=LeftMouseY; bass.fx.add(crush); bass.amp=LeftMouseX; "
+      UpdateEffectCode = "crush.bitDepth=LeftMouseX*16; crush.sampleRate=LeftMouseY; bass.amp=LeftMouseX; "
     }
     { 
       Name="Melody"; 
       PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(RightMouseY * 20),Math.round(RightMouseY * 20), Math.round( (RightMouseY + RightMouseX) * 10) ]}, Euclid( {0},{1} ) ); "; 
       KillCode = "melody.kill(); "
-      CreateEffectCode = "melody.cutoff=(1-LeftMouseX)/2; melody.resonance=(1- LeftMouseY)*5; "
-      UpdateEffectCode = "melody.cutoff=(1-LeftMouseX)/2; melody.resonance=(1- LeftMouseY)*5; "
+      CreateEffectCode = "melody.cutoff= .2 + LeftMouseX/2; melody.resonance=LeftMouseY*5; "
+      UpdateEffectCode = "melody.cutoff= .2 + LeftMouseX/2; melody.resonance=LeftMouseY*5; "
     }
   |]
 
