@@ -34,12 +34,13 @@ let inline private (=>) x y = x ==> y
 
 //Domain
 //-----------------------------------------------------------------------------
+///Kinect v2 mode (requires Kinect and Kinectron) or Mouse mode (useful for development)
 type UIMode =
   | Kinect | Mouse
 
+///Programming mode sets rhythm (right only) and Performance sets pitch (on pitched instruments) and effects
 type BodyMode = 
   | Programming | Performance
-
 
 type BodyModel =
   {
@@ -50,7 +51,7 @@ type BodyModel =
     RightHand : float * float
   }
 
-
+///Primary model in Elmish; represents total state of application
 type Model = 
   {
     Mode : UIMode
@@ -64,8 +65,9 @@ type Model =
     Debug : string
   }
  
-
+///Elmish messages definiing all UI actions and wrapped external events
 type Msg =
+  ///Toggle between Kinect and Mouse modes
   | ToggleMode
   | MouseMove of float * float
   | MouseClick of float * float
@@ -75,6 +77,7 @@ type Msg =
   | ChangeInstrument
   | Debug of string
 
+///Gibber instruments are defined by quoted code to make use of Gibber's synchronization mechanism (codeToExecute; see documentation)
 type GibberInstrument =
   {
     Name : string
@@ -84,63 +87,62 @@ type GibberInstrument =
     UpdateEffectCode : string
   }
 
-//TODO: make effects controls like Euclid
-//Code executed to control gibber instruments. Defined this way to make use of gibber's synchronization mechanism (codeToExecute; see documentation)
+///Static array initializer of GibberInstruments; six instruments for up to six Kinect bodies
 let gibberInstruments = 
   [|
     { 
       Name="Kick"; 
       PlayCode="kick = Kick().play( 55, Euclid( {0},{1} ) ); "; 
       KillCode = "kick.kill(); "
-      CreateEffectCode = "hpf = HPF(); hpf.cutoff=LeftMouseX/10; kick.fx.add(hpf); reverb = Reverb(); reverb.roomSize=LeftMouseY; kick.fx.add(reverb); "
-      UpdateEffectCode = "hpf.cutoff=LeftMouseX/10; reverb.roomSize=LeftMouseY; "
+      CreateEffectCode = "hpf = HPF(); hpf.cutoff={0}/10; kick.fx.add(hpf); reverb = Reverb(); reverb.roomSize={1}; kick.fx.add(reverb); " 
+      UpdateEffectCode = "hpf.cutoff={0}/10; reverb.roomSize={1}; " 
     }
-    //?kick.fx.remove() on kill?
     { 
       Name="Snare"; 
       PlayCode="snare = Snare().play( 1, Euclid( {0},{1} ) ); "; 
       KillCode = "snare.kill(); "
-      CreateEffectCode = "snare.snappy=LeftMouseX; snare.decay=LeftMouseY*20000; "
-      UpdateEffectCode = "snare.snappy=LeftMouseX; snare.decay=LeftMouseY*20000; "
+      CreateEffectCode = "snare.snappy={0}; snare.decay={1}*20000; " 
+      UpdateEffectCode = "snare.snappy={0}; snare.decay={1}*20000; "
     }
     { 
       Name="Hat Closed"; 
       PlayCode="hatc = Hat().play( 5000, Euclid( {0},{1} ) ); "; 
       KillCode = "hatc.kill(); "
-      CreateEffectCode = "flanger=Flanger(); flanger.rate=LeftMouseY*20; flanger.amount=LeftMouseY*300; flanger.feedback=LeftMouseY; hatc.fx.add(flanger); lpf=LPF(); lpf.cutoff=1-LeftMouseX/2; hatc.fx.add(lpf); hatc.amp=6; "
-      UpdateEffectCode = "flanger.rate=LeftMouseY*20; flanger.amount=LeftMouseY*300; flanger.feedback=LeftMouseY; lpf.cutoff=1-LeftMouseX/2; "
+      CreateEffectCode = "flanger=Flanger(); flanger.rate={1}*20; flanger.amount={1}*300; flanger.feedback={1}; hatc.fx.add(flanger); lpf=LPF(); lpf.cutoff=1-{0}/2; hatc.fx.add(lpf); hatc.amp=6; " //y,x
+      UpdateEffectCode = "flanger.rate={1}*20; flanger.amount={1}*300; flanger.feedback={1}; lpf.cutoff=1-{0}/2; "
     }
     { 
       Name="Hat Open"; 
       PlayCode="hato = Hat().play( 30000, Euclid( {0},{1} ) ); "; 
       KillCode = "hato.kill(); "
-      CreateEffectCode = "ringmod=RingMod(); ringmod.frequency=LeftMouseY*3000; ringmod.amp=LeftMouseX; hato.fx.add(ringmod); hpf2=HPF(); hpf2.cutoff=LeftMouseX/2; hato.fx.add(hpf2); "
-      UpdateEffectCode = "ringmod.frequency=LeftMouseY*3000; ringmod.amp=LeftMouseX; hpf2.cutoff=LeftMouseX/2; "
+      CreateEffectCode = "ringmod=RingMod(); ringmod.frequency={1}*3000; ringmod.amp={0}; hato.fx.add(ringmod); hpf2=HPF(); hpf2.cutoff={0}/2; hato.fx.add(hpf2); "
+      UpdateEffectCode = "ringmod.frequency={1}*3000; ringmod.amp={0}; hpf2.cutoff={0}/2; "
     }
     //TODO: find the doc specifying the magic number below which gibber interprets as notes and above which interprets as frequencies (guess to be in 40-50 range)
     { 
       Name="Bass"; 
-      PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(RightMouseY * 20)}, Euclid( {0},{1} ) ); "; 
+      PlayCode="bass = FM( 'bass' ).note.seq( function(){return Math.round(bassPitch * 20)}, Euclid( {0},{1} ) ); "; 
       KillCode = "bass.kill(); "
-      CreateEffectCode = "crush=Crush(); crush.bitDepth=LeftMouseX*16; crush.sampleRate=LeftMouseY; bass.fx.add(crush); bass.amp=LeftMouseX; "
-      UpdateEffectCode = "crush.bitDepth=LeftMouseX*16; crush.sampleRate=LeftMouseY; bass.amp=LeftMouseX; "
+      CreateEffectCode = "crush=Crush(); crush.bitDepth={0}*16; crush.sampleRate={1}; bass.fx.add(crush); bass.amp={0}; "
+      UpdateEffectCode = "crush.bitDepth={0}*16; crush.sampleRate={1}; bass.amp={0}; "
     }
     { 
       Name="Melody"; 
-      PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(RightMouseY * 20),Math.round(RightMouseY * 20), Math.round( (RightMouseY + RightMouseX) * 10) ]}, Euclid( {0},{1} ) ); "; 
+      PlayCode="melody = Synth2({ maxVoices:4, waveform:'PWM'} ); melody.chord.seq( function(){return [ Math.round(melodyPitch1 * 20),Math.round(melodyPitch2 * 20), Math.round( (melodyPitch1 + melodyPitch2) * 10) ]}, Euclid( {0},{1} ) ); "; 
       KillCode = "melody.kill(); "
-      CreateEffectCode = "melody.cutoff= .2 + LeftMouseX/2; melody.resonance=LeftMouseY*5; "
-      UpdateEffectCode = "melody.cutoff= .2 + LeftMouseX/2; melody.resonance=LeftMouseY*5; "
+      CreateEffectCode = "melody.cutoff= .2 + {0}/2; melody.resonance={1}*5; "
+      UpdateEffectCode = "melody.cutoff= .2 + {0}/2; melody.resonance={1}*5; "
     }
   |]
 
+///Elmish init used to create intiial application state on start up
 let init () : Model * Cmd<Msg> =
   { 
     Mode = Kinect
     MousePosition = 0.0,0.0
     MouseMoveHandler = null
     MouseClickHandler = null
-    KinectronIP = "10.101.135.121"//"192.168.128.20"
+    KinectronIP = "127.0.0.1"
     DefaultBody = 0
     Bodies = Array.init 6 (fun i -> {Mode=Programming; Id=i; LeftHand=0.0,0.0; RightHand=0.0,0.0})
     InstrumentMap = Array.init 6 ( fun i -> i)
@@ -149,8 +151,9 @@ let init () : Model * Cmd<Msg> =
 
 //Update
 //-----------------------------------------------------------------------------
+///External event wrapping a message
 let mapEvent = Event<Msg>() 
-
+///Subscription on external events to bring them into Elmish message queue
 let mapEventSubscription initial =
     let sub dispatch =
         let msgSender msg = 
@@ -161,7 +164,7 @@ let mapEventSubscription initial =
 
     Cmd.ofSub sub
 
-
+///Static array initializer for colors for bodies tracked by Kinect
 let GetColors() =  
   [|
     p5.color( 255.0, 0.0, 0.0)
@@ -172,7 +175,7 @@ let GetColors() =
     p5.color( 128.0, 0.0, 128.0);
   |]
 
-//Process a kinectron data frame as a P5 sketch
+///P5 sketch for Kinect body tracking creation and update; calls Kinectron server
 let kinectronSketch ip canvasWidth canvasHeight = 
   let colors = GetColors()
 
@@ -232,26 +235,28 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
 
   //canonical p5 draw function; subsumed by kinectron draw
-  Browser.window?setup <- fun() -> ()
+  Browser.window?draw <- fun() -> ()
 
 
-//Does not play immediately but rather waits until muscially appropriate (?next measure?)
+///Delays playing Gibber code until muscially appropriate (?next measure?)
 let gibberPlayDelayed( code : string ) =
   p5.Gibber.Clock.codeToExecute.push( %[ "code"=> code ] )
 
+///Plays Gibber code immediately, useful for effects
 let gibberPlayImmediate( code: string) =
   Browser.window?eval(code) |> ignore
 
-//let myp5 = p5(  getSketch ) //"192.168.128.20");
+///Map native mouse move to Elmish messages
 let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
   mapEvent.Trigger ( Msg.MouseMove(ev.clientX,ev.clientY) )
   null
 
+///Map native mouse click to Elmish messages
 let onMouseClick (ev : Fable.Import.Browser.MouseEvent) =
   mapEvent.Trigger ( Msg.MouseClick(ev.clientX,ev.clientY) )
   null
 
-//get image relative coordinates for each hand
+///Mouse mode active pattern for image relative coordinates of LEFT hand
 let (|VitruvianLeft|_|) (x,y) =
     let image = Browser.document.getElementById("vitruvian")
     if image <> null then
@@ -264,6 +269,7 @@ let (|VitruvianLeft|_|) (x,y) =
     else
       None
 
+///Mouse mode active pattern for image relative coordinates of RIGHT hand
 let (|VitruvianRight|_|) (x,y) =
     let image = Browser.document.getElementById("vitruvian")
     if image <> null then
@@ -276,6 +282,7 @@ let (|VitruvianRight|_|) (x,y) =
     else
       None
 
+///Elmish cannonical update function that maps incoming messages and model to a new model and commands
 let update msg model : Model * Cmd<Msg> =
   match msg with
   | ToggleMode ->
@@ -293,15 +300,9 @@ let update msg model : Model * Cmd<Msg> =
   | MouseMove(x,y) ->
       match (x,y) with
       | VitruvianLeft (xrel,yrel) ->  
-        //set some global mouse position variables for Gibber
-        Browser.window?LeftMouseX <- xrel
-        Browser.window?LeftMouseY <- yrel
         //update the left hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
       | VitruvianRight (xrel,yrel) -> 
-        //set some global mouse position variables for Gibber
-        Browser.window?RightMouseX <- xrel
-        Browser.window?RightMouseY <- yrel
         //update the right hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //either the image does not exist or we are outside the vitruvian regions
@@ -326,19 +327,25 @@ let update msg model : Model * Cmd<Msg> =
     | Programming -> 
       let x,y = b.RightHand
       let sx,sy = Math.Round(x * 16.0),Math.Round(y * 16.0) //NOTE: arbitrary limit to 16th notes
-      let playWithRhythm = String.Format( instrument.PlayCode, sx, sy )
+      let playEuclid = String.Format( instrument.PlayCode, sx, sy )
+      let playEffect = String.Format( instrument.CreateEffectCode, x, y )
       debug <- sx.ToString() + ":" + sy.ToString() + ":" + instrument.Name
       gibberPlayDelayed ( instrument.KillCode ) //this will throw a harmless error if the instrument is not defined
-      gibberPlayDelayed ( playWithRhythm )
-      gibberPlayDelayed ( instrument.CreateEffectCode )
-    //Left hand performance is effects and requires updating those based on x/y coordinates
-    //This appears to be unnecessary for right hand because the pitches are functions   
-    //For whatever reason, similar functions do not appear to work for effects.
+      gibberPlayDelayed ( playEuclid )
+      gibberPlayDelayed ( playEffect )
     | Performance -> 
-      gibberPlayImmediate ( instrument.UpdateEffectCode )
-      //TODO: ryhthm and effects are handled different ways - we are creating globals in js for effects/mouse. Do we need to? Why can't we inject same as Euclid?
-
-    //access the model's body array to update this body, turning off programming mode
+      //Left hand performance is effects and requires updating those based on x/y coordinates
+      let xLeft,yLeft = b.LeftHand
+      let updateEffect = String.Format( instrument.UpdateEffectCode, xLeft, yLeft )
+      gibberPlayImmediate ( updateEffect )
+      //Right hand performance updates global variables that are referenced in the pitch functions for pitched instruments   
+      let xRight,yRight = b.RightHand
+      Browser.window?bassPitch <- yRight
+      Browser.window?melodyPitch1 <- yRight
+      Browser.window?melodyPitch2 <- xRight
+      //TODO: only update the pitches when the appropriate instrument is active; currently all are being updated
+      
+    //access the model's body array to update this body, turning off programming mode if we were in it
     let newBodies = model.Bodies
     newBodies.[b.Id] <- {b with Mode=Performance}
     { model with Bodies = newBodies}, Debug( debug ) |> Cmd.ofMsg
@@ -354,74 +361,102 @@ let update msg model : Model * Cmd<Msg> =
   | Debug x ->
 
     {model with Debug=x},[]
-  
-
-    //P5 global instance initialization
-    // Browser.window?setup <- fun() -> 
-    //     (
-    //       p5.createCanvas(600.0, 400.0) |> ignore   
-    //       p5.background(0.0 )
-    //     )
-    // //p5.draw <- fun() -> 
-    // Browser.window?draw <- fun() -> 
-    //     (
-    //       p5.fill( 255.0 |> U4.Case1 )
-    //       p5.ellipse( p5.mouseX ,  p5.mouseY , 30.0,30.0) |> ignore
-    //       //p5.ellipse( unbox<float>(Browser.window?mouseX),  unbox<float>(Browser.window?mouseY), 30.0,30.0) |> ignore
-    //     )
 
 //View
 //-----------------------------------------------------------------------------
+///A simple button widget
 let simpleButton txt action dispatch =
     div [ ClassName "column is-narrow" ] [ 
       a [ ClassName "button" 
-          //Style [CSSProp.FontSize 28 ]
           OnClick (fun _ -> action |> dispatch) ]
         [ str txt ] 
       ]
-let button txt action dispatch =
-  Fable.Helpers.React.button [
-    ClassName "button" 
-    OnClick (fun _ -> action |> dispatch)  ] [  str txt ]
 
-
+///Interface in Kinect mode
 let kinectView model dispatch =
-  div [ ] [ 
-    input [ ClassName "input"
-            //Style [CSSProp.FontSize 28 ]
-            //Type "text"
-            Placeholder "Type Kinectron IP Address"
-            DefaultValue model.KinectronIP
-            AutoFocus true
-            OnChange (fun ev -> !!ev.target?value |> ChangeIPStr |> dispatch ) 
-          ] 
-    simpleButton "Connect" ConnectKinectron dispatch
+  div [ ClassName "container"] [
+    div [ ClassName "level"; ClassName "is-size-6" ][
+      div [ ClassName "level-left"][
+        div [ ClassName "level-item"][
+          p [][ str "Kinectron IP Address"]
+        ]
+        div [ ClassName "level-item"][
+          input [ ClassName "input" 
+                  Placeholder "Type Kinectron IP Address"
+                  DefaultValue model.KinectronIP
+                  AutoFocus true
+                  OnChange (fun ev -> !!ev.target?value |> ChangeIPStr |> dispatch ) 
+                ] 
+        ]
+        simpleButton "Connect" ConnectKinectron dispatch
+        ]
     ]
+  ]
+
+///Interface in Mouse mode
 let mouseView model dispatch =
-  div [ ] [ 
-    span [ Style [CSSProp.FontSize 28 ] ] [ 
-      str ( gibberInstruments.[model.InstrumentMap.[model.DefaultBody]].Name )
+  div [] [
+    div [ClassName "container"] [
+      div [ ClassName "level"; ClassName "is-size-6" ][
+        div [ ClassName "level-left"][
+          div [ ClassName "level-item"][
+            span [ ] [ str (sprintf "Instrument is %s"  gibberInstruments.[model.InstrumentMap.[model.DefaultBody]].Name ) ]
+            ]
+          div [ ClassName "level-item"][
+            span [] [ simpleButton "Change instrument" ChangeInstrument dispatch ]
+            ]
+        ]
       ]
-    simpleButton "Change instrument" ChangeInstrument dispatch
-    span [ Style [CSSProp.FontSize 28 ] ] [ 
-      str "Move your mouse to adjust parameters within each red region. To program and lock in a rhythm, click the mouse." 
-      ]
+    ];
+    div [ ClassName "columns" ][
+      div [ ClassName "column" ][
+        span [ ][ 
+          str "Simulate hand position by moving mouse in red regions (left/right). Your left hand is effects (requires playing sound). Your right hand programs "; 
+          a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
+          str " by clicking once. For pitched instruments, moving right hand also changes pitch. Six instruments can play simultaneously. Click somewhere in right region to get started."]
+        ]
+      ];
     //if we attach mouse event handlers to img, e.g. img [ OnMouseMove (fun ev -> MouseMove(ev) |> dispatch) ; OnClick (fun ev -> MouseClick(ev) |> dispatch) ; ... ] 
     //we get hundreds of annoying react warnings "Warning: This synthetic event is reused for performance reasons. If you're seeing this, you're accessing the method ..."
-    img [ Id "vitruvian"; Src "img/vitruvian-r2.jpg"]
-    ]
+    img [ ClassName "img-noscale"; Id "vitruvian"; Src "img/vitruvian-r2.jpg"; ]
+  ]
+
+///Root interface
 let root model dispatch =
-  div [ ] [ 
-    simpleButton "Toggle Mode" ToggleMode dispatch
-    (
-      if model.Mode = Kinect then
-        kinectView model dispatch
-      else
-        mouseView model dispatch
-    )
-    span [ ] [ 
-      str (sprintf "%s" (model.ToString()) )]
-    ]
+  let page = function
+  | Kinect -> kinectView model dispatch
+  | Mouse -> mouseView model dispatch
+
+  div [] [
+    h1 [ ClassName "is-size-1"] [ str "Fable Tekno"];
+    div [ ClassName "columns" ][
+      div [ ClassName "column" ][
+        span [] [
+              str "Compose music in real time using six instruments (4 piece drum kit/bass/melody). Kinect mode requires a Kinect v2 but Mouse mode requires only a mouse. "
+              a [ Href "TODO INSERT LINK TO POST" ] [ str "See here for more details." ]
+            ]
+      ]
+    ];
+    div [ ClassName "container"] [ 
+      div [ ClassName "level"; ClassName "is-size-6"] [
+        div [ ClassName "level-left"][
+          div [ ClassName "level-item"][
+            span [] [  str (sprintf "Mode is %s" (model.Mode.ToString()) ) ]
+          ]
+          div [ ClassName "level-item"][
+            span [] [ simpleButton "Toggle Mode" ToggleMode dispatch ]
+          ]
+        ]
+      ]
+    ];
+
+    page model.Mode;
+    
+    span [ ] [ str (sprintf "%s" (model.ToString()) )]
+  ]
+  
+    
+
 
 
 
@@ -430,7 +465,7 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-//|> Program.withDebugger 
+//|> Program.withDebugger //getting some annoying messages on this; probably not using it properly
 |> Program.withHMR
 #endif
 |> Program.withReact "elmish-app"
