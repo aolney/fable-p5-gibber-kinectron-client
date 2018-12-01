@@ -4,13 +4,12 @@ open System.Text.RegularExpressions
 open Fable.Core
 open Fable.Import.JS
 open Fable.Import.Browser
+open System
 
 
 //NOTE: we change all these imports to Global b/c npm import of p5.gibber.js not working, see here https://github.com/charlieroberts/p5.gibber.js/issues/4
-//If these are changed back, then add these dependencies to package.json
-// "p5":"^0.5.16",
-// "p5.gibber.js": "^0.2.4"
 module p5 =
+    
     type [<AllowNullLiteral>] [<Global>] Color() =
         class end
     and [<Global>] [<StringEnum>] Alignment = 
@@ -240,7 +239,7 @@ module p5 =
         member __.set(freq: float, res: float, ?timeFromNow: float): unit = jsNative
         member __.freq(freq: float, ?timeFromNow: float): float = jsNative
         member __.res(res: float, ?timeFromNow: float): float = jsNative
-        member __.setType(UNKNOWN: string): unit = jsNative
+        member __.setType(unknown: string): unit = jsNative
         member __.amp(volume: float, ?rampTime: float, ?timeFromNow: float): unit = jsNative
         member __.connect(unit: obj): unit = jsNative
         member __.disconnect(): unit = jsNative
@@ -248,7 +247,7 @@ module p5 =
     and [<AllowNullLiteral>] [<Global>] Delay() =
         member __.leftDelay with get(): obj = jsNative and set(v: obj): unit = jsNative
         member __.rightDelay with get(): obj = jsNative and set(v: obj): unit = jsNative
-        member __.``process``(Signal: obj, ?delayTime: float, ?feedback: float, ?lowPass: float): unit = jsNative
+        member __.``process``(signal: obj, ?delayTime: float, ?feedback: float, ?lowPass: float): unit = jsNative
         member __.delayTime(delayTime: float): unit = jsNative
         member __.feedback(feedback: U2<float, obj>): unit = jsNative
         member __.filter(cutoffFreq: U2<float, obj>, res: U2<float, obj>): unit = jsNative
@@ -277,7 +276,7 @@ module p5 =
         member __.sequence with get(): obj = jsNative and set(v: obj): unit = jsNative
 
     and [<AllowNullLiteral>] [<Global>] Part(?steps: float, ?tatums: float) =
-        member __.setBPM(BPM: float, ?rampTime: float): unit = jsNative
+        member __.setBPM(bpm: float, ?rampTime: float): unit = jsNative
         member __.getBPM(): float = jsNative
         member __.start(?time: float): unit = jsNative
         member __.loop(?time: float): unit = jsNative
@@ -313,37 +312,38 @@ module p5 =
         member __.disconnect(): unit = jsNative
         member __.amp(volume: float, ?rampTime: float, ?timeFromNow: float): unit = jsNative
 //Start p5.gibber.js
-type [<AllowNullLiteral>]  [<Global>] Clock = 
-    member __.Beats(v:obj) = jsNative
-    member __.Measures( v :obj) = jsNative
-    member __.Time(v:obj) = jsNative
-    member __.addMetronome( metronome :obj) = jsNative
+    type [<AllowNullLiteral>]  [<Global>] Clock = 
+        member __.Beats(v:obj) = jsNative
+        member __.Measures( v :obj) = jsNative
+        member __.Time(v:obj) = jsNative
+        member __.addMetronome( metronome :obj) = jsNative
 
-    member __.beats(v:obj) = jsNative
+        member __.beats(v:obj) = jsNative
 
-    member __.bpm_() = jsNative
-    member __.callback( rate :obj) = jsNative
-    member __.codeToExecute : obj [] = jsNative
+        member __.bpm_() = jsNative
+        member __.callback( rate :obj) = jsNative
+        member __.codeToExecute : obj [] = jsNative
 
-    member __.export( target :obj) = jsNative
-    member __.getPhase() = jsNative
-    member __.getTimeSinceStart() = jsNative
+        member __.export( target :obj) = jsNative
+        member __.getPhase() = jsNative
+        member __.getTimeSinceStart() = jsNative
 
-    member __.measures( v :obj) = jsNative
+        member __.measures( v :obj) = jsNative
 
-    member __.processBeat() = jsNative
+        member __.processBeat() = jsNative
 
-    member __.rate_() = jsNative
-    member __.reset() = jsNative
+        member __.rate_() = jsNative
+        member __.reset() = jsNative
 
-    member __.setPhase( v :obj) = jsNative
+        member __.setPhase( v :obj) = jsNative
 
-    member __.start( shouldInit :obj) = jsNative
+        member __.start( shouldInit :obj) = jsNative
 
-    member __.tap() = jsNative
-    member __.time(v:obj) = jsNative
+        member __.tap() = jsNative
+        member __.time(v:obj) = jsNative
 
-type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTMLElement, bool>, ?sync: bool) =
+    //Instance mode
+    type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTMLElement, bool>, ?sync: bool) =
         member __.Clock : Clock = jsNative
         member __.AD(args: ResizeArray<obj>): obj = jsNative
         member __.ADSR(args: ResizeArray<obj>): obj = jsNative
@@ -488,12 +488,12 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.camera(x: float, y: float, z: float): p5 = jsNative
         member __.perspective(fovy: float, aspect: float, near: float, far: float): p5 = jsNative
         member __.ortho(left: float, right: float, bottom: float, top: float, near: float, far: float): p5 = jsNative
-        member __.ambientLight(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
+        member __.ambientLight(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
         member __.normalMaterial(): p5 = jsNative
         member __.texture(): p5 = jsNative
-        member __.basicMaterial(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative    
-        member __.ambientMaterial(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
-        member __.specularMaterial(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
+        member __.basicMaterial(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative    
+        member __.ambientMaterial(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
+        member __.specularMaterial(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): p5 = jsNative
         member __.alpha(obj: obj): unit = jsNative
         member __.blue(obj: obj): unit = jsNative
         member __.brightness(color: obj): unit = jsNative
@@ -503,14 +503,14 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.lightness(color: obj): unit = jsNative
         member __.red(obj: obj): unit = jsNative
         member __.saturation(color: obj): unit = jsNative
-        member __.background(v1: U4<float, string, p5.Color, p5.Image>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
+        member __.background(v1: U4<float, string, Color, Image>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
         //member __.textAlign(v1: U3<p5.LEFT,p5.CENTER,p5.RIGHT>): unit = jsNative
-        member __.textAlign(v1:p5.Alignment): unit = jsNative
+        member __.textAlign(v1:Alignment): unit = jsNative
         member __.clear(): unit = jsNative
-        member __.fill(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
+        member __.fill(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
         member __.noFill(): unit = jsNative
         member __.noStroke(): unit = jsNative
-        member __.stroke(v1: U4<float, ResizeArray<obj>, string, p5.Color>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
+        member __.stroke(v1: U4<float, ResizeArray<obj>, string, Color>, ?v2: float, ?v3: float, ?a: float): unit = jsNative
         member __.arc(a: float, b: float, c: float, d: float, start: float, stop: float, ?mode: string): obj = jsNative
         member __.ellipse(a: float, b: float, c: float, d: float): p5 = jsNative
         member __.line(x1: float, y1: float, x2: float, y2: float): p5 = jsNative
@@ -584,14 +584,14 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.touchStarted(): unit = jsNative
         member __.touchMoved(): unit = jsNative
         member __.touchEnded(): unit = jsNative
-        member __.createImage(width: float, height: float): p5.Image = jsNative
+        member __.createImage(width: float, height: float): Image = jsNative
         member __.saveFrames(filename: string, extension: string, duration: float, framerate: float, ?callback: Func<unit, obj>): unit = jsNative
-        member __.image(img: p5.Image, ?sx: float, ?sy: float, ?sWidth: float, ?sHeight: float, ?dx: float, ?dy: float, ?dWidth: float, ?dHeight: float): unit = jsNative
+        member __.image(img: Image, ?sx: float, ?sy: float, ?sWidth: float, ?sHeight: float, ?dx: float, ?dy: float, ?dWidth: float, ?dHeight: float): unit = jsNative
         member __.tint(v1: U2<float, ResizeArray<obj>>, ?v2: U2<float, ResizeArray<obj>>, ?v3: U2<float, ResizeArray<obj>>, ?a: U2<float, ResizeArray<obj>>): unit = jsNative
         member __.noTint(): unit = jsNative
         member __.imageMode(m: string): unit = jsNative
         member __.filter(filterType: string, filterParam: float): unit = jsNative
-        member __.get(?x: float, ?y: float, ?w: float, ?h: float): U2<ResizeArray<obj>, p5.Image> = jsNative
+        member __.get(?x: float, ?y: float, ?w: float, ?h: float): U2<ResizeArray<obj>, Image> = jsNative
         member __.loadPixels(): unit = jsNative
         member __.set(x: float, y: float, c: U3<float, ResizeArray<obj>, obj>): unit = jsNative
         member __.loadFont(path: string, ?callback: Func<unit, obj>): obj = jsNative
@@ -603,7 +603,7 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.httpDo(path: string, ?``method``: string, ?data: obj, ?datatype: string, ?callback: Func<unit, obj>, ?errorCallback: Func<unit, obj>): unit = jsNative
         member __.saveJSON(json: U2<ResizeArray<obj>, obj>, filename: string, ?optimize: bool): unit = jsNative
         member __.saveStrings(list: ResizeArray<obj>, filename: string): unit = jsNative
-        member __.saveTable(Table: p5.Table, filename: string, ?options: string): unit = jsNative
+        member __.saveTable(table: Table, filename: string, ?options: string): unit = jsNative
         member __.abs(n: float): float = jsNative
         member __.ceil(n: float): float = jsNative
         member __.constrain(n: float, low: float, high: float): float = jsNative
@@ -682,3 +682,220 @@ type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTML
         member __.masterVolume(volume: U2<float, obj>, ?rampTime: float, ?timeFromNow: float): unit = jsNative
         member __.sampleRate(): float = jsNative
         member __.midiToFreq(midiNote: float): float = jsNative
+
+    //Global mode
+    //p5 global
+    //TODO some attempts at global setup/draw for p5 below; ended up using dynamic b/c these didn't work
+    // type Fable.Import.Browser.Window with
+    //     member __.setup with get(): (obj) = jsNative and set(v: obj): unit = jsNative  
+    //     member __.draw  with get(): obj = jsNative and set(v: obj): unit = jsNative  
+        
+    // [<Global>]
+    // let mutable setup : (unit -> unit) = jsNative
+    // [<Global>]
+    // let mutable draw  : (unit -> unit) = jsNative
+
+    [<Global>]
+    let color(v1: float, v2: float, v3: float ): ResizeArray<obj> = jsNative
+    [<Global>]
+    let background(v1: float): unit = jsNative
+    [<Global>]
+    let fill(v1:U4<float, ResizeArray<obj>, string, Color>): unit = jsNative
+    [<Global>]
+    let textSize(theSize: float): unit = jsNative
+    [<Global>]
+    let text(str: string, x: float, y: float, x2: float, y2: float): unit = jsNative
+    [<Global>]
+    let textAlign(v1:Alignment): unit = jsNative
+    [<Global>]
+    let noStroke(): unit = jsNative
+    [<Global>]
+    let ellipse(a: float, b: float, c: float, d: float): unit = jsNative
+    [<Global>]
+    let createCanvas(w: float, h: float ): obj = jsNative
+    [<Global>]
+    let mouseX : float = jsNative
+    [<Global>]
+    let mouseY : float = jsNative
+
+    //Gibber global
+    [<Global>]
+    type Gibber =
+        static member init() : unit = jsNative
+        static member Clock with get(): Clock = jsNative
+    [<Global>]
+    let Clock : Clock = jsNative
+    [<Global>]
+    let AD(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let ADSR(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Abs(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Add(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Additive(props: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Arp(notation: obj, beats: obj, pattern: obj, mult: obj, scale: obj): obj = jsNative
+    [<Global>]
+    let Beats(``val``: obj): obj = jsNative
+    [<Global>]
+    let Biquad(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Bus(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Chorus(rate: obj, feedback: obj, amount: obj): obj = jsNative
+    [<Global>]
+    let Clamp(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Clap(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Clave(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Compressor(position: obj): obj = jsNative
+    [<Global>]
+    let Conga(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Cowbell(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Crush(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Curve(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Delay(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Distortion(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Div(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Drums(_sequence: obj, _timeValue: obj, _amp: obj, _freq: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let EDrums(_sequence: string, timeValue: float, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Ease(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Ensemble(props: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Euclid(ones: obj, length: obj, dur: obj): obj = jsNative
+    [<Global>]
+    let FFT(fftSize: obj, updateRate: obj): obj = jsNative
+    [<Global>]
+    let FM(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Filter24(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Flanger(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Follow(ugen: obj, bufferSize: obj): obj = jsNative
+    [<Global>]
+    let Freesound(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Freesound2(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Gain(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Grains(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Group(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let HPF(cutoff: obj, resonance: obj): obj = jsNative
+    [<Global>]
+    let Hat(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let HiShelf(position: obj): obj = jsNative
+    [<Global>]
+    let Input(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Kick(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let LPF(cutoff: obj, resonance: obj): obj = jsNative
+    [<Global>]
+    let Line(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Lines(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Looper(input: obj, length: obj, numberOfLoops: obj): obj = jsNative
+    [<Global>]
+    let LowShelf(position: obj): obj = jsNative
+    [<Global>]
+    let Map(prop: obj, _outputMin: obj, _outputMax: obj, _inputMin: obj, _inputMax: obj, _curve: obj, _wrap: obj): obj = jsNative
+    [<Global>]
+    let MasterVerb(verb: obj): obj = jsNative
+    [<Global>]
+    let Measures(``val``: obj): obj = jsNative
+    [<Global>]
+    let Merge(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Mod(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Mono(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Mul(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Noise(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let PWM(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Pattern(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Pluck(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Pow(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Reverb(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let RingMod(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Rndf(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Rndi(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Robot(_options: obj): obj = jsNative
+    [<Global>]
+    let Sampler(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Saw(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Scale(_root: obj, _mode: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let ScaleSeq(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Schizo(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Score(data: obj, opts: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Seq(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Sine(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Snare(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let SoundFont(soundFontName: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Sqrt(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Square(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let StereoVerb(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Sub(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Synth(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Synth2(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Tom(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Tremolo(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Triangle(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Ugen(desc: obj, args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Vibrato(args: ResizeArray<obj>): obj = jsNative
+    [<Global>]
+    let Vocoder(carrier: obj, modulator: obj, numBands: obj, startFreq: obj, endFreq: obj, Q: obj): obj = jsNative
+    [<Global>]
+    let Wavetable(table: obj): obj = jsNative
+    [<Global>]
+    let XOX(_sequence: obj, _timeValue: obj, _amp: obj, _freq: obj, args: ResizeArray<obj>): obj = jsNative
