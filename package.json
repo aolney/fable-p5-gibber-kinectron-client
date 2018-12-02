@@ -1,6 +1,6 @@
 {
   "name": "fable-p5-gibber-kinectron-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Use kinectron skeletal tracking data to drive music synthesis in the browser using Fable, P5, and Gibber",
   "scripts": {
     "postinstall": "dotnet restore",
@@ -9,7 +9,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "publish": "gh-pages -d public"
   },
-  "keywords": ["fable","kinectron","p5","gibber","fsharp","FsAdvent"],
+  "keywords": [
+    "fable",
+    "kinectron",
+    "p5",
+    "gibber",
+    "fsharp",
+    "FsAdvent"
+  ],
   "author": "Andrew M. Olney",
   "license": "Apache-2.0",
   "dependencies": {
@@ -27,12 +34,12 @@
     "css-loader": "^0.28.7",
     "fable-loader": "^1.1.2",
     "fable-utils": "^1.0.6",
+    "gh-pages": "^1.1.0",
     "loglevel": "^1.5.0",
     "node-sass": "^4.10.0",
     "sass-loader": "^6.0.6",
     "style-loader": "^0.18.2",
     "webpack": "^3.6.0",
-    "webpack-dev-server": "^2.8.2",
-    "gh-pages": "^1.1.0"
+    "webpack-dev-server": "^2.8.2"
   }
 }
