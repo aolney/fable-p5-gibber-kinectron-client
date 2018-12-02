@@ -546,7 +546,7 @@ module p5 =
         member __.getURLPath(): ResizeArray<obj> = jsNative
         member __.getURLParams(): obj = jsNative
         member __.createCanvas(w: float, h: float, ?renderer: string): obj = jsNative
-        member __.resizeCanvas(): unit = jsNative
+        member __.resizeCanvas(w: float, h: float, ?renderer: string): unit = jsNative
         member __.noCanvas(): unit = jsNative
         member __.createGraphics(w: float, h: float, renderer: string): obj = jsNative
         member __.noLoop(): unit = jsNative
@@ -713,6 +713,10 @@ module p5 =
     let ellipse(a: float, b: float, c: float, d: float): unit = jsNative
     [<Global>]
     let createCanvas(w: float, h: float ): obj = jsNative
+    [<Global>]
+    let resizeCanvas(w: float, h: float ): unit = jsNative
+    [<Global>]
+    let remove(): unit = jsNative
     [<Global>]
     let mouseX : float = jsNative
     [<Global>]
