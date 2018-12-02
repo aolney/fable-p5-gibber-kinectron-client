@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Use kinectron skeletal tracking data to drive music synthesis in the browser using Fable, P5, and Gibber",
   "scripts": {
+    "postinstall": "dotnet restore",
     "build": "webpack -p",
     "start": "webpack-dev-server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "publish": "gh-pages -d public"
   },
-  "keywords": ["fable","kinectron","p5","gibber"],
+  "keywords": ["fable","kinectron","p5","gibber","fsharp","FsAdvent"],
   "author": "Andrew M. Olney",
   "license": "Apache-2.0",
   "dependencies": {
@@ -30,6 +32,7 @@
     "sass-loader": "^6.0.6",
     "style-loader": "^0.18.2",
     "webpack": "^3.6.0",
-    "webpack-dev-server": "^2.8.2"
+    "webpack-dev-server": "^2.8.2",
+    "gh-pages": "^1.1.0"
   }
 }

@@ -38,8 +38,12 @@ let inline private (=>) x y = x ==> y
 type UIMode =
   | Kinect | Mouse
 
-type KinectState  =
+type KinectronState  =
   | Connected | Disconnected
+
+[<StringEnum>]
+type MouseState =
+  | [<CompiledName("Tracking")>]Tracking | [<CompiledName("Not Tracking")>]NotTracking
 
 ///Programming mode sets rhythm (right only) and Performance sets pitch (on pitched instruments) and effects
 type BodyMode = 
@@ -58,7 +62,8 @@ type BodyModel =
 type Model = 
   {
     Mode : UIMode
-    KinectState : KinectState
+    KinectronState : KinectronState
+    MouseState : MouseState
     MousePosition : float * float
     MouseMoveHandler : obj
     MouseClickHandler : obj
@@ -75,7 +80,8 @@ type Msg =
   ///Toggle between Kinect and Mouse modes
   | ToggleMode
   | MouseMove of float * float
-  | MouseClick of float * float
+  | MouseLeftClick of float * float
+  | MouseAltClick of float * float
   | ChangeIPStr of string
   | ConnectKinectron 
   | Body of BodyModel
@@ -154,7 +160,8 @@ let gibberInstruments =
 let init () : Model * Cmd<Msg> =
   { 
     Mode = Kinect
-    KinectState = Disconnected
+    KinectronState = Disconnected
+    MouseState = Tracking
     MousePosition = 0.0,0.0
     MouseMoveHandler = null
     MouseClickHandler = null
@@ -219,14 +226,16 @@ let kinectronSketch ip canvasWidth canvasHeight =
         p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
         p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
 
-    //hands close together (clap) is change insturments; closed hands (3) means rhythm programming; everything else is melody live performance
+    //Lasso both hands (peace sign) is change insturments; closed hands (3) means rhythm programming; everything else is melody live performance
     let bodyMode = 
-      if (Math.Abs(body.joints.[kinectron.HANDLEFT].depthX - body.joints.[kinectron.HANDRIGHT].depthX) < 0.01) && (Math.Abs(body.joints.[kinectron.HANDLEFT].depthY - body.joints.[kinectron.HANDRIGHT].depthY) < 0.01) then
+      if body.rightHandState = 4 && body.leftHandState = 4 then
+      //clap loses pitch and effects
+      //(Math.Abs(body.joints.[kinectron.HANDLEFT].depthX - body.joints.[kinectron.HANDRIGHT].depthX) < 0.01) && (Math.Abs(body.joints.[kinectron.HANDLEFT].depthY - body.joints.[kinectron.HANDRIGHT].depthY) < 0.01) then
         BodyMode.ChangeInstrument
-      elif body.rightHandState <> 3 && body.leftHandState <> 3 then  
-        BodyMode.Performance
-      else
+      elif body.rightHandState = 3 && body.leftHandState = 3 then  
         BodyMode.Programming
+      else
+        BodyMode.Performance
 
     //Construct body relative coordinates based on shoulder width
     let width = body.joints.[kinectron.SHOULDERLEFT].depthX - body.joints.[kinectron.SHOULDERRIGHT].depthX 
@@ -269,7 +278,10 @@ let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
 
 ///Map native mouse click to Elmish messages
 let onMouseClick (ev : Fable.Import.Browser.MouseEvent) =
-  mapEvent.Trigger ( Msg.MouseClick(ev.clientX,ev.clientY) )
+  if ev.altKey |> not then 
+    mapEvent.Trigger ( MouseLeftClick(ev.clientX,ev.clientY) )
+  else
+    mapEvent.Trigger ( MouseAltClick(ev.clientX,ev.clientY) )
   null
 
 ///Mouse mode active pattern for image relative coordinates of LEFT hand
@@ -314,27 +326,32 @@ let update msg model : Model * Cmd<Msg> =
         Fable.Import.Browser.window.addEventListener_click clickHandler 
         { model with Mode = Mouse; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler; }, []
   | MouseMove(x,y) ->
-      match (x,y) with
-      | VitruvianLeft (xrel,yrel) ->  
+      match model.MouseState,(x,y) with
+      | Tracking,VitruvianLeft (xrel,yrel) ->  
         //update the left hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; LeftHand=xrel,yrel; RightHand=model.Bodies.[model.DefaultBody].RightHand}  ) |> Cmd.ofMsg
-      | VitruvianRight (xrel,yrel) -> 
+      | Tracking,VitruvianRight (xrel,yrel) -> 
         //update the right hand with a body command
         { model with MousePosition = x,y }, Msg.Body( {Id=model.DefaultBody; Mode=model.Bodies.[model.DefaultBody].Mode ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //either the image does not exist or we are outside the vitruvian regions
-      | _ -> model, []
-
-  | MouseClick(x,y) ->
-      match (x,y) with
+      | _,_ -> model, []
+  | MouseLeftClick(x,y) ->
+      match model.MouseState,(x,y) with
       //update the right hand with a programming body command
-      | VitruvianRight (xrel,yrel) -> { model with MousePosition = x,y;Debug = ("mouse click " + x.ToString() + " " + y.ToString() ) }, Msg.Body( {Id=model.DefaultBody; Mode=Programming ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
+      | Tracking,VitruvianRight (xrel,yrel) -> { model with MousePosition = x,y;Debug = ("mouse click " + x.ToString() + " " + y.ToString() ) }, Msg.Body( {Id=model.DefaultBody; Mode=Programming ; RightHand=xrel,yrel; LeftHand=model.Bodies.[model.DefaultBody].LeftHand}  ) |> Cmd.ofMsg
       //ignore all other cases
-      | _ -> model,[]
+      | _,_ -> model,[]
+  | MouseAltClick(x,y) ->
+    let newMouseState =
+      match model.MouseState with
+      | Tracking -> NotTracking
+      | NotTracking -> Tracking
+    {model with MouseState=newMouseState},[]
   | ChangeIPStr str ->
       { model with KinectronIP = str}, []
   | ConnectKinectron -> 
-      kinectronSketch model.KinectronIP 700.0 410.0
-      {model with KinectState=Connected},[]
+      kinectronSketch model.KinectronIP 1980.0 600.0
+      {model with KinectronState=Connected},[]
   //Body messages are issued in both mouse and kinect mode
   //TODO: This message seems to happen without clicking on load sometimes
   | Body b ->
@@ -418,33 +435,42 @@ let kinectView model dispatch =
           ]
           div [ ClassName "level-item"][
             (
-              match model.KinectState with
+              match model.KinectronState with
               | Disconnected -> simpleButton "Connect" ConnectKinectron dispatch
               | Connected -> 
-                span [ ClassName "has-text-danger" ][ str "You are connected. Refresh to make a new connection. " ] //TODO: Not sure how to tear down kinectron; perhaps should move to model
+                span [ ClassName "has-text-success" ][ str "You are connected. Refresh to make a new connection. " ] //TODO: Not sure how to tear down kinectron; perhaps should move to model
             )
           ]
+        ]
+      ];
+      div [ ClassName "columns" ][
+        div [ ClassName "column" ][
+          (
+            match model.KinectronState with
+            | Connected -> str ""
+            | Disconnected ->
+                span [ ClassName "has-text-danger" ][ 
+                  str "You are currently disconnected. Connect to Kinectron or switch to mouse mode. "; 
+                ]
+          )
+        ]
       ]
     ];
     div [ ClassName "columns" ][
       div [ ClassName "column" ][
         (
-          match model.KinectState with
+          match model.KinectronState with
           | Connected -> 
               span [ ][ 
                 str "Your right hand position programs "; 
                 a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
-                str " if BOTH hands are closed. Once a rhythm is programmed, your open left hand position modulates effects, and for pitched instruments, your open right hand changes pitch. Clapping hands changes instruments for all players. Close both hands while being tracked to get started."
+                str " if BOTH hands are closed. Once a rhythm is programmed, your open left hand position modulates effects, and for pitched instruments, your open right hand changes pitch. Peace/victory signs on both hands changes instruments for all players. Close both hands while being tracked to get started."
               ]
-          | Disconnected ->
-              span [ ClassName "has-text-danger" ][ 
-                str "You are currently disconnected. Connect to Kinectron or switch to mouse mode. "; 
-              ]
+          | Disconnected -> str ""
         )
       ]
     ]
   ]
-]
 
 ///Interface in Mouse mode
 let mouseView model dispatch =
@@ -456,8 +482,22 @@ let mouseView model dispatch =
             span [ ] [ str (sprintf "Instrument is %s"  (gibberInstruments.[ InstrumentMap.[model.DefaultBody] ].Instrument.ToString()) ) ]
             ]
           div [ ClassName "level-item"][
-            span [] [ simpleButton "Change instrument" ChangeInstrument dispatch ]
+            span [] [ simpleButton "Change Instrument" ChangeInstrument dispatch ]
             ]
+        ]
+      ]
+      div [ ClassName "level"; ClassName "is-size-6" ][
+        div [ ClassName "level-left"][
+          div [ ClassName "level-item"][
+            (
+              match model.MouseState with
+              | Tracking -> span [ ClassName "has-text-success"] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
+              | NotTracking -> span [ ClassName "has-text-danger"  ] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
+            )
+          ]
+          div [ ClassName "level-item"] [
+            span [] [ simpleButton "Toggle Tracking" (MouseAltClick(0.0,0.0)) dispatch ]
+          ]
         ]
       ]
     ];
@@ -466,7 +506,7 @@ let mouseView model dispatch =
         span [ ][ 
           str "Simulate hand position by moving mouse in red regions (left/right). Your left hand is effects (requires playing sound). Your right hand programs "; 
           a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
-          str " by clicking once. For pitched instruments, moving right hand also changes pitch. Six instruments can play simultaneously. Click somewhere in right region to get started."]
+          str " by clicking once. For pitched instruments, moving right hand also changes pitch. Turn on/off mouse tracking by holding down ALT and clicking. Six instruments can play simultaneously. Click somewhere in right region to get started."]
         ]
       ];
     //if we attach mouse event handlers to img, e.g. img [ OnMouseMove (fun ev -> MouseMove(ev) |> dispatch) ; OnClick (fun ev -> MouseClick(ev) |> dispatch) ; ... ] 

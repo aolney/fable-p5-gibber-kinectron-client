@@ -1,12 +1,10 @@
 # fable-p5-gibber-kinectronclient
-Use kinectron skeletal tracking data to drive music synthesis in the browser using Fable, P5, and Gibber
+Use [kinectron](https://github.com/kinectron/kinectron) skeletal tracking data or mouse input to drive music synthesis in the browser using [Fable](http://fable.io/), [P5](https://p5js.org/), and [Gibber](http://charlie-roberts.com/gibber/p5-gibber/).
 
-What follows comes from the Fable template used for this project.
+For more information on the development and how to use [see this post](https://olney.ai/category/2018/12/02/fabletekno.html).
 
----------------------------------------
-
-# Fable.Elmish.React Template
-
+## Template 
+This project was based [on a template](https://github.com/elmish/templates).
 This template can be used to generate a simple web app with [Fable](http://fable.io/) and [Elmish](https://fable-elmish.github.io/).
 You can find more templates by searching `Fable.Template` packages in [Nuget](https://www.nuget.org).
 
@@ -22,31 +20,29 @@ Although is not a Fable requirement, on macOS and Linux you'll need [Mono](http:
 
 The project can be used by editors compatible with the new .fsproj format, like VS Code + [Ionide](http://ionide.io/), Emacs with [fsharp-mode](https://github.com/fsharp/emacs-fsharp-mode) or [Rider](https://www.jetbrains.com/rider/). **Visual Studio for Mac** is also compatible but in the current version the package auto-restore function conflicts with Paket so you need to disable it: `Preferences > Nuget > General`.
 
-## Installing the template
-
-In a terminal, run `dotnet new -i Fable.Template.Elmish.React::*` to install or update the template to latest version.
-
-> In some shells you many need quotations: `dotnet new -i "Fable.Template.Elmish.React::*"`. If you use dotnet SDK 2, you should only need to type `dotnet new -i Fable.Template.Elmish.React`.
-
-## Creating a new project with the template
-
-In a terminal, run `dotnet fable-elmish-react` to create a project in the current directory. Type `dotnet new fable-elmish-react -n awesome` instead to create a subfolder named `awesome` and put the new project there.
-
-> The project will have the name of the directory. You may get some issues if the directory name contains some special characters like hyphens
-
 ## Building and running the app
 
-* Install JS dependencies: `yarn install`
-* **Move to `src` folder**: `cd src`
-* Install F# dependencies: `dotnet restore`
+* Install JS dependencies: `yarn`
+* Change dir with `cd src`
 * Start Fable daemon and [Webpack](https://webpack.js.org/) dev server: `dotnet fable yarn-start`
-* In your browser, open: http://localhost:8080/
-
-> `dotnet fable yarn-start` (or `npm-start`) is used to start the Fable daemon and run a script in package.json concurrently. It's a shortcut of `yarn-run [SCRIP_NAME]`, e.g. `dotnet fable yarn-run start`.
+* In your browser, open: http://0.0.0.0:8080/
 
 If you are using VS Code + [Ionide](http://ionide.io/), you can also use the key combination: Ctrl+Shift+B (Cmd+Shift+B on macOS) instead of typing the `dotnet fable yarn-start` command. This also has the advantage that Fable-specific errors will be highlighted in the editor along with other F# errors.
 
-Any modification you do to the F# code will be reflected in the web page after saving. When you want to output the JS code to disk, run `dotnet fable yarn-build` (or `npm-build`) and you'll get a minified JS bundle in the `public` folder.
+Any modification you do to the F# code will be reflected in the web page after saving. When you want to output the JS code to disk, run `dotnet fable yarn-build` and you'll get a minified JS bundle in the `public` folder.
+
+ To publish the web pages into gh-pages branch, run `npm run publish`.
+
+## Debugging in VS Code
+
+* Install [Debugger For Chrome](https://marketplace.visualstudio.com/items?itemName=msjsdiag.debugger-for-chrome) in vscode
+* Press F5 in vscode
+* After all the .fs files are compiled, the browser will be launched
+* Set a breakpoint in F#
+* Restart with Ctrl+Shift+F5 (Cmd+Shift+F5 on macOS)
+* The breakpoint will be caught in vscode
+
+**NOTE: debugging directly in Chrome F12 seems more reliable**
 
 ## Project structure
 
@@ -61,7 +57,9 @@ Any modification you do to the F# code will be reflected in the web page after s
 
 > Paket dependencies will be installed in the `packages` directory. See [Paket website](https://fsprojects.github.io/Paket/) for more info.
 
-### npm
+**If you wipe out the paket.lock, you probably need to run `.paket/paket.exe install` to fix the project**
+
+### npm/yarn
 
 - **package.json**: contains the JS dependencies together with other info, like development scripts.
 - **package-lock.json**: is the lock file created by npm5.
