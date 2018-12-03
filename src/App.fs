@@ -526,7 +526,7 @@ let root model dispatch =
       div [ ClassName "column" ][
         span [] [
               str "Compose music in real time using six instruments (4 piece drum kit/bass/melody). Kinect/team mode requires a Kinect v2 but Mouse/single mode requires only a mouse. "
-              a [ Href "TODO INSERT LINK TO POST" ] [ str "Click here for more details." ]
+              a [ Href "https://olney.ai/category/2018/12/02/fabletekno.html" ] [ str "Click here for more details." ]
             ]
       ]
     ];
