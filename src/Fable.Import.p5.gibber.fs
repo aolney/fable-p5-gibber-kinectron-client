@@ -698,7 +698,7 @@ module p5 =
     [<Global>]
     let color(v1: float, v2: float, v3: float ): ResizeArray<obj> = jsNative
     [<Global>]
-    let background(v1: float): unit = jsNative
+    let background(gray: float, opacity: int): unit = jsNative
     [<Global>]
     let fill(v1:U4<float, ResizeArray<obj>, string, Color>): unit = jsNative
     [<Global>]

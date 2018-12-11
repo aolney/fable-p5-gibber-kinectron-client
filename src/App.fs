@@ -209,9 +209,13 @@ let kinectronSketch ip canvasWidth canvasHeight =
   let kinectron = new Kinectron( ip )
   kinectron.makeConnection()
 
+  //We choose not to dispatch Elmish messages for drawing and instead do all drawing here
   let processFrame(body:kinectron.Body)=
-    //We choose not to dispatch Elmish messages for drawing
-    p5.background( 0.0 )// , 20.0 ) //blank the background
+    //blank the background, 100% opacity (prevents drawing of all players?)
+    //p5.background( 0.0, 255 )
+    //blank the background, partial opacity (to allow drawing of all players?)
+    p5.background( 0.0, 20 ) 
+
     for j in body.joints do 
       //draw closed right hand differently (large white)
       if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
@@ -258,7 +262,7 @@ let kinectronSketch ip canvasWidth canvasHeight =
 
   //set up p5 and start tracking bodies
   p5.createCanvas(canvasWidth, canvasHeight) |> ignore   
-  p5.background(0.0 )
+  p5.background(0.0, 255 )
   p5.textAlign( p5.Alignment.CENTER )
   kinectron.startTrackedBodies(processFrame)            
 
