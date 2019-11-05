@@ -222,6 +222,11 @@ module p5 =
         member __.pan(panning: float, timeFromNow: float): unit = jsNative
         member __.connect(unit: obj): unit = jsNative
         member __.disconnect(): unit = jsNative
+    and [<AllowNullLiteral>] [<Global>] Core() =
+        member __.context : obj = jsNative
+        
+    and [<AllowNullLiteral>] [<Global>] Audio() =
+        member __.Core : Core = jsNative
 
     and [<AllowNullLiteral>] [<Global>] AudioIn() =
         member __.enabled with get(): obj = jsNative and set(v: obj): unit = jsNative
@@ -343,7 +348,7 @@ module p5 =
         member __.time(v:obj) = jsNative
 
     //Instance mode
-    type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<HTMLElement, bool>, ?sync: bool) =
+    type [<AllowNullLiteral>]  [<Global>] p5(sketch: Func<obj, unit>, ?node: U2<Browser.Types.HTMLElement, bool>, ?sync: bool) =
         member __.Clock : Clock = jsNative
         member __.AD(args: ResizeArray<obj>): obj = jsNative
         member __.ADSR(args: ResizeArray<obj>): obj = jsNative
@@ -721,12 +726,15 @@ module p5 =
     let mouseX : float = jsNative
     [<Global>]
     let mouseY : float = jsNative
+    [<Global>]
+    let getAudioContext(): obj = jsNative
 
     //Gibber global
     [<Global>]
     type Gibber =
         static member init() : unit = jsNative
         static member Clock with get(): Clock = jsNative
+        static member Audio with get(): Audio = jsNative
     [<Global>]
     let Clock : Clock = jsNative
     [<Global>]
@@ -741,6 +749,8 @@ module p5 =
     let Additive(props: obj, args: ResizeArray<obj>): obj = jsNative
     [<Global>]
     let Arp(notation: obj, beats: obj, pattern: obj, mult: obj, scale: obj): obj = jsNative
+    // [<Global>]
+    // let Audio : Audio = jsNative
     [<Global>]
     let Beats(``val``: obj): obj = jsNative
     [<Global>]

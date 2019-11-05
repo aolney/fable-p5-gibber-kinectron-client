@@ -1,21 +1,33 @@
 module App
 
-open Elmish
 open Fable.Core
 open Fable.Core.JsInterop
+
+open Browser
+
 open Fable.Import
+
+open Elmish
 open Elmish.React
+open Fable.React
+open Fable.React.Props
 open Elmish.Debug
 open Elmish.HMR
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+
+open Fulma
+open Fable.FontAwesome
+
 open Fable.Import.kinectron
+
 open System
-open Fable.PowerPack.Fetch.Fetch_types
-open Fable.Import.React
+
+// open Fable.Helpers.React
+// open Fable.Helpers.React.Props
+// open Fable.PowerPack.Fetch.Fetch_types
+// open Fable.Import.React
 
 
-importAll "../sass/main.sass"
+importAll "./style.sass"
 
 //Helpers
 //-----------------------------------------------------------------------------
@@ -34,9 +46,9 @@ let inline private (=>) x y = x ==> y
 
 //Domain
 //-----------------------------------------------------------------------------
-///Kinect v2 mode (requires Kinect and Kinectron) or Mouse mode (useful for development)
+///Kinect v2 mode (requires Kinect and Kinectron) or Mouse mode (useful for development) 
 type UIMode =
-  | Kinect | Mouse
+  | Kinect | Mouse 
 
 type KinectronState  =
   | Connected | Disconnected
@@ -86,6 +98,7 @@ type Msg =
   | ConnectKinectron 
   | Body of BodyModel
   | ChangeInstrument
+  | ResumeAudioContext //Chrome req https://github.com/processing/p5.js-sound/issues/249
   | Debug of string
 
 ///Our universe of instruments
@@ -178,7 +191,7 @@ let mutable InstrumentMap = Array.init 6 ( fun i -> i)
 //Update
 //-----------------------------------------------------------------------------
 ///External event wrapping a message
-let mapEvent = Event<Msg>() 
+let mapEvent = Microsoft.FSharp.Control.Event<Msg>() 
 ///Subscription on external events to bring them into Elmish message queue
 let mapEventSubscription initial =
     let sub dispatch =
@@ -273,24 +286,26 @@ let gibberPlayDelayed( code : string ) =
 
 ///Plays Gibber code immediately, useful for effects
 let gibberPlayImmediate( code: string) =
-  Browser.window?eval(code) |> ignore
+  Browser.Dom.window?eval(code) |> ignore
 
 ///Map native mouse move to Elmish messages
-let onMouseMove (ev : Fable.Import.Browser.MouseEvent) =
-  mapEvent.Trigger ( Msg.MouseMove(ev.clientX,ev.clientY) )
-  null
+let onMouseMove (ev : Browser.Types.Event) =
+  let evm = ev |> unbox<Browser.Types.MouseEvent>
+  mapEvent.Trigger ( Msg.MouseMove(evm.clientX,evm.clientY) )
+  
 
 ///Map native mouse click to Elmish messages
-let onMouseClick (ev : Fable.Import.Browser.MouseEvent) =
-  if ev.altKey |> not then 
-    mapEvent.Trigger ( MouseLeftClick(ev.clientX,ev.clientY) )
+let onMouseClick (ev : Browser.Types.Event) =
+  let evm = ev |> unbox<Browser.Types.MouseEvent>
+  if evm.altKey |> not then 
+    mapEvent.Trigger ( MouseLeftClick(evm.clientX,evm.clientY) )
   else
-    mapEvent.Trigger ( MouseAltClick(ev.clientX,ev.clientY) )
-  null
+    mapEvent.Trigger ( MouseAltClick(evm.clientX,evm.clientY) )
+  
 
 ///Mouse mode active pattern for image relative coordinates of LEFT hand
 let (|VitruvianLeft|_|) (x,y) =
-    let image = Browser.document.getElementById("vitruvian")
+    let image = Browser.Dom.document.getElementById("vitruvian")
     if image <> null then
       let rect = image.getBoundingClientRect()
       let xrel,yrel = x - rect.left,y - rect.top
@@ -303,7 +318,7 @@ let (|VitruvianLeft|_|) (x,y) =
 
 ///Mouse mode active pattern for image relative coordinates of RIGHT hand
 let (|VitruvianRight|_|) (x,y) =
-    let image = Browser.document.getElementById("vitruvian")
+    let image = Browser.Dom.document.getElementById("vitruvian")
     if image <> null then
       let rect = image.getBoundingClientRect()
       let xrel,yrel = x - rect.left,y - rect.top
@@ -319,16 +334,16 @@ let update msg model : Model * Cmd<Msg> =
   match msg with
   | ToggleMode ->
       if model.Mode = Mouse then
-        Fable.Import.Browser.window.removeEventListener ("mousemove",  unbox model.MouseMoveHandler) 
-        Fable.Import.Browser.window.removeEventListener ("mousemove",  unbox model.MouseClickHandler) 
+        Browser.Dom.window.removeEventListener ("mousemove",  unbox model.MouseMoveHandler) 
+        Browser.Dom.window.removeEventListener ("click",  unbox model.MouseClickHandler) 
         { model with Mode = Kinect; }, []
       else
-        let moveHandler = System.Func<_,_>( onMouseMove )
-        let clickHandler = System.Func<_,_>( onMouseClick )
+        // let moveHandler = System.Func<_,_>( onMouseMove )
+        // let clickHandler = System.Func<_,_>( onMouseClick )
         //since handler must be Func, which is anonymous, we must store a reference in our model to unsubscribe later
-        Fable.Import.Browser.window.addEventListener_mousemove moveHandler 
-        Fable.Import.Browser.window.addEventListener_click clickHandler 
-        { model with Mode = Mouse; MouseMoveHandler=moveHandler; MouseClickHandler=clickHandler; }, []
+        Browser.Dom.window.addEventListener( "mousemove", onMouseMove )
+        Browser.Dom.window.addEventListener("click", onMouseClick )
+        { model with Mode = Mouse; MouseMoveHandler=onMouseMove; MouseClickHandler=onMouseClick; }, []
   | MouseMove(x,y) ->
       match model.MouseState,(x,y) with
       | Tracking,VitruvianLeft (xrel,yrel) ->  
@@ -385,10 +400,10 @@ let update msg model : Model * Cmd<Msg> =
       //Right hand performance updates global variables that are referenced in the pitch functions for pitched instruments   
       let xRight,yRight = b.RightHand
       if instrument.Instrument = Bass then
-        Browser.window?bassPitch <- yRight
+        Browser.Dom.window?bassPitch <- yRight
       elif instrument.Instrument = Melody then
-        Browser.window?melodyPitch1 <- yRight
-        Browser.window?melodyPitch2 <- xRight
+        Browser.Dom.window?melodyPitch1 <- yRight
+        Browser.Dom.window?melodyPitch2 <- xRight
       { model with Bodies = newBodies}, []
     | BodyMode.ChangeInstrument ->
       //Enforce two second delay between messages so users can shift one instrument at a time
@@ -406,6 +421,12 @@ let update msg model : Model * Cmd<Msg> =
 
     InstrumentMap <- newMap
     {model with InstrumentChangeTime = DateTime.Now},[]
+  | ResumeAudioContext ->
+    //p5.getAudioContext()?resume() |> ignore
+    //Gibber.Audio.Core.context.resume()
+    p5.Gibber.Audio.Core.context?resume()
+
+    model,[]
   | Debug x ->
 
     {model with Debug=x},[]
@@ -542,6 +563,7 @@ let root model dispatch =
           ]
           div [ ClassName "level-item"][
             span [] [ simpleButton "Toggle Mode" ToggleMode dispatch ]
+            span [] [ simpleButton "Start/resume Audio" ResumeAudioContext dispatch ]
           ]
         ]
       ]
@@ -562,8 +584,9 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-//|> Program.withDebugger //getting some annoying messages on this; probably not using it properly
-|> Program.withHMR
+|> Program.withDebugger
+|> Program.withConsoleTrace
 #endif
-|> Program.withReact "elmish-app"
+|> Program.withReactSynchronous "elmish-app"
+// |> Program.withReactBatched "elmish-app"
 |> Program.run
