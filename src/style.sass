@@ -3,7 +3,17 @@ $purple: #7a325d
 $primary: $purple
 $black: #202020
 
-@import '../node_modules/bulma/bulma'
+@import "~bulma/sass/utilities/initial-variables"
+@import "~bulma/sass/utilities/functions"
+
+$fa-font-path: "~@fortawesome/fontawesome-free/webfonts/"
+@import '~@fortawesome/fontawesome-free/scss/fontawesome.scss'
+@import "~@fortawesome/fontawesome-free/scss/solid.scss"
+@import "~@fortawesome/fontawesome-free/scss/regular.scss"
+@import "~@fortawesome/fontawesome-free/scss/brands.scss"
+
+@import '~bulma/bulma.sass'
+@import '~bulma-pageloader/dist/css/bulma-pageloader.sass'
 
 .navbar-bg
   background-color: $black

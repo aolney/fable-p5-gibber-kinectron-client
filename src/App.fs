@@ -433,60 +433,57 @@ let update msg model : Model * Cmd<Msg> =
 
 //View
 //-----------------------------------------------------------------------------
-///A simple button widget
-let simpleButton txt action dispatch =
-    div [ ClassName "column is-narrow" ] [ 
-      a [ ClassName "button" 
-          OnClick (fun _ -> action |> dispatch) ]
-        [ str txt ] 
-      ]
 
 ///Interface in Kinect mode
 let kinectView model dispatch =
-  div [] [
-    div [ ClassName "container"] [
-      div [ ClassName "level"; ClassName "is-size-6" ][
-        div [ ClassName "level-left"][
-          div [ ClassName "level-item"][
-            p [][ str "Kinectron IP Address"]
+  Section.section [] [
+    Container.container [ Container.IsFluid ] [
+      Level.level [ ][
+        Level.left [ ][
+          Level.item [ ][
+            Text.p [][ str "Kinectron IP Address"]
           ]
-          div [ ClassName "level-item"][
-            input [ ClassName "input" 
-                    Placeholder "Type Kinectron IP Address"
-                    DefaultValue model.KinectronIP
-                    AutoFocus true
+          Level.item [ ][
+            Input.input [ 
+                    Input.Placeholder "Type Kinectron IP Address"
+                    Input.DefaultValue model.KinectronIP
+                    Input.Props [ AutoFocus true;
                     OnChange (fun ev -> !!ev.target?value |> ChangeIPStr |> dispatch ) 
-                  ] 
+                  ] ]
           ]
-          div [ ClassName "level-item"][
+          Level.item [ ][
             (
               match model.KinectronState with
-              | Disconnected -> simpleButton "Connect" ConnectKinectron dispatch
+              | Disconnected -> 
+                Button.button [ 
+                  Button.Color IsPrimary
+                  Button.OnClick (fun _ -> dispatch ConnectKinectron )
+                ] [ str "Connect" ]
               | Connected -> 
-                span [ ClassName "has-text-success" ][ str "You are connected. Refresh to make a new connection. " ] //TODO: Not sure how to tear down kinectron; perhaps should move to model
+                Text.span [ Modifiers [ Modifier.TextColor IsSuccess ] ][ str "You are connected. Refresh to make a new connection. " ] //TODO: Not sure how to tear down kinectron; perhaps should move to model
             )
           ]
         ]
       ];
-      div [ ClassName "columns" ][
-        div [ ClassName "column" ][
+      Columns.columns [ ][
+        Column.column [ ][
           (
             match model.KinectronState with
             | Connected -> str ""
             | Disconnected ->
-                span [ ClassName "has-text-danger" ][ 
+                Text.span [ Modifiers [ Modifier.TextColor IsDanger ] ][ 
                   str "You are currently disconnected. Connect to Kinectron or switch to mouse mode. "; 
                 ]
           )
         ]
       ]
     ];
-    div [ ClassName "columns" ][
-      div [ ClassName "column" ][
+    Columns.columns [ ][
+      Column.column [ ][
         (
           match model.KinectronState with
           | Connected -> 
-              span [ ][ 
+              Text.span [ ][ 
                 str "Your right hand position programs "; 
                 a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
                 str " if BOTH hands are closed. Once a rhythm is programmed, your open left hand position modulates effects, and for pitched instruments, your open right hand changes pitch. Peace/victory signs on both hands changes instruments for all players. Close both hands while being tracked to get started."
@@ -499,40 +496,45 @@ let kinectView model dispatch =
 
 ///Interface in Mouse mode
 let mouseView model dispatch =
-  div [] [
-    div [ClassName "container"] [
-      div [ ClassName "level"; ClassName "is-size-6" ][
-        div [ ClassName "level-left"][
-          div [ ClassName "level-item"][
-            span [ ] [ str (sprintf "Instrument is %s"  (gibberInstruments.[ InstrumentMap.[model.DefaultBody] ].Instrument.ToString()) ) ]
+  Section.section [] [
+    Container.container [] [
+      Level.level [ ][
+        Level.left [ ][
+          Level.item [ ][
+            Text.span [ ] [ str (sprintf "Instrument is %s"  (gibberInstruments.[ InstrumentMap.[model.DefaultBody] ].Instrument.ToString()) ) ]
             ]
-          div [ ClassName "level-item"][
-            span [] [ simpleButton "Change Instrument" ChangeInstrument dispatch ]
-            ]
+          Level.item [ ][
+            Button.button [ 
+              Button.Color IsPrimary
+              Button.OnClick (fun _ -> dispatch ChangeInstrument )
+            ] [ str "Change Instrument" ]
+          ]
         ]
       ]
-      div [ ClassName "level"; ClassName "is-size-6" ][
-        div [ ClassName "level-left"][
-          div [ ClassName "level-item"][
+      Level.level [ ][
+        Level.left [ ][
+          Level.item [ ][
             (
               match model.MouseState with
-              | Tracking -> span [ ClassName "has-text-success"] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
-              | NotTracking -> span [ ClassName "has-text-danger"  ] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
+              | Tracking -> Text.span [ Modifiers [ Modifier.TextColor IsSuccess ] ] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
+              | NotTracking -> Text.span [ Modifiers [ Modifier.TextColor IsDanger ] ] [ str (sprintf "Mouse is %s" ( model.MouseState.ToString() ) ) ]
             )
           ]
-          div [ ClassName "level-item"] [
-            span [] [ simpleButton "Toggle Tracking" (MouseAltClick(0.0,0.0)) dispatch ]
+          Level.item [ ] [
+            Button.button [ 
+              Button.Color IsPrimary
+              Button.OnClick (fun _ -> dispatch (MouseAltClick(0.0,0.0)) )
+            ] [ str "Toggle Tracking" ]
+
           ]
         ]
       ]
     ];
-    div [ ClassName "columns" ][
-      div [ ClassName "column" ][
-        span [ ][ 
-          str "Simulate hand position by moving mouse in red regions (left/right). Your left hand is effects (requires playing sound). Your right hand programs "; 
-          a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
-          str " by clicking once. For pitched instruments, moving right hand also changes pitch. Turn on/off mouse tracking by holding down ALT and clicking. Six instruments can play simultaneously. Click somewhere in right region to get started."]
-        ]
+    Columns.columns [  ][
+      Column.column [ ][
+        str "Simulate hand position by moving mouse in red regions (left/right). Your left hand is effects (requires playing sound). Your right hand programs "; 
+        a [ Href "https://en.wikipedia.org/wiki/Euclidean_rhythm"] [ str "a Euclidean rhythm" ];
+        str " by clicking once. For pitched instruments, moving right hand also changes pitch. Turn on/off mouse tracking by holding down ALT and clicking. Six instruments can play simultaneously. Click somewhere in right region to get started."]
       ];
     //if we attach mouse event handlers to img, e.g. img [ OnMouseMove (fun ev -> MouseMove(ev) |> dispatch) ; OnClick (fun ev -> MouseClick(ev) |> dispatch) ; ... ] 
     //we get hundreds of annoying react warnings "Warning: This synthetic event is reused for performance reasons. If you're seeing this, you're accessing the method ..."
@@ -545,25 +547,36 @@ let root model dispatch =
   | Kinect -> kinectView model dispatch
   | Mouse -> mouseView model dispatch
 
-  div [] [
-    h1 [ ClassName "is-size-1"] [ str "Fable Tekno"];
-    div [ ClassName "columns" ][
-      div [ ClassName "column" ][
-        span [] [
-              str "Compose music in real time using six instruments (4 piece drum kit/bass/melody). Kinect/team mode requires a Kinect v2 but Mouse/single mode requires only a mouse. "
-              a [ Href "https://olney.ai/category/2018/12/02/fabletekno.html" ] [ str "Click here for more details." ]
-            ]
+  Section.section [] [
+    Heading.h1 [ ] [ str "Fable Tekno"];
+    Columns.columns [ ][
+      Column.column [ ][
+        str "Compose music in real time using six instruments (4 piece drum kit/bass/melody). Kinect/team mode requires a Kinect v2 but Mouse/single mode requires only a mouse. "
+        a [ Href "https://olney.ai/category/2018/12/02/fabletekno.html" ] [ str "Click here for more details." ]
       ]
     ];
-    div [ ClassName "container"] [ 
-      div [ ClassName "level"; ClassName "is-size-6"] [
-        div [ ClassName "level-left"][
-          div [ ClassName "level-item"][
-            span [] [  str (sprintf "Mode is %s" (model.Mode.ToString()) ) ]
+    Container.container [ ] [ 
+      Level.level [ ] [
+        Level.left [ ][
+          Level.item [ ][
+            Button.button [ 
+              Button.Color IsPrimary
+              Button.OnClick (fun _ -> dispatch ResumeAudioContext )
+            ] [ str "Start/Resume Audio" ]
           ]
-          div [ ClassName "level-item"][
-            span [] [ simpleButton "Toggle Mode" ToggleMode dispatch ]
-            span [] [ simpleButton "Start/resume Audio" ResumeAudioContext dispatch ]
+          Level.item [ ][
+            str "Click if you don't hear audio" 
+          ]
+        ]
+        Level.right [] [
+          Level.item [ ][
+            str (sprintf "Mode is %s" (model.Mode.ToString()) )
+          ]
+          Level.item [ ][
+            Button.button [ 
+              Button.Color IsPrimary
+              Button.OnClick (fun _ -> dispatch ToggleMode )
+            ] [ str "Toggle Mode" ]
           ]
         ]
       ]
@@ -587,6 +600,6 @@ Program.mkProgram init update root
 |> Program.withDebugger
 |> Program.withConsoleTrace
 #endif
-|> Program.withReactSynchronous "elmish-app"
-// |> Program.withReactBatched "elmish-app"
+// |> Program.withReactSynchronous "elmish-app"
+|> Program.withReactBatched "elmish-app"
 |> Program.run

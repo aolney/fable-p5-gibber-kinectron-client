@@ -12812,8 +12812,8 @@ Create an object that returns the first argument raised to the power of the seco
 
     return me;
   },
-            
-  Map : function( prop, _outputMin, _outputMax, _inputMin, _inputMax, _curve, _wrap) {
+  //Andrew: renamed 110619 to avoid collision with javascript Map collection; collision caused foreach error in react-dom
+  MapG : function( prop, _outputMin, _outputMax, _inputMin, _inputMax, _curve, _wrap) {
     var pow = Math.pow,
     LINEAR = 0,
     LOGARITHMIC = 1,
@@ -21933,7 +21933,7 @@ module.exports = function( Gibber ) {
         
         from.object.track = proxy;
 
-        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( proxy, target.min, target.max, from.min, from.max, target.output, from.wrap ) 
+        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( proxy, target.min, target.max, from.min, from.max, target.output, from.wrap ) 
         
         op.input = mapping
         
@@ -21966,7 +21966,7 @@ module.exports = function( Gibber ) {
         
         from.track = proxy
         
-        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( proxy, target.min, target.max, from.min, from.max, target.output, from.wrap ) 
+        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( proxy, target.min, target.max, from.min, from.max, target.output, from.wrap ) 
         
         op.input = mapping
         target.object[ target.propertyName ] = op
@@ -22011,7 +22011,7 @@ module.exports = function( Gibber ) {
         }
         from.object.track = proxy
         
-        target.object[ target.propertyName ] = Gibber.Audio.Core.Binops.Map( proxy, target.min, target.max, from.min, from.max )
+        target.object[ target.propertyName ] = Gibber.Audio.Core.Binops.MapG( proxy, target.min, target.max, from.min, from.max )
         
         mapping = target.object[ target.Name ].mapping = target.object[ target.propertyName ] // must call getter function explicitly
         
@@ -22038,7 +22038,7 @@ module.exports = function( Gibber ) {
       audioOut : function( target, from ) {
         var mapping
         
-        mapping = Gibber.Audio.Core.Binops.Map( null, target.min, target.max, 0, 1, 0 )
+        mapping = Gibber.Audio.Core.Binops.MapG( null, target.min, target.max, 0, 1, 0 )
         
         target.object[ target.propertyName ] = target.object[ target.Name ].mapping = mapping
         
@@ -22089,7 +22089,7 @@ module.exports = function( Gibber ) {
     graphics: {
       graphics: function( target, from ) {
         // rewrite getValue function of Map object to call Map callback and then return appropriate value
-        var map = Gibber.Audio.Core.Binops.Map( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
+        var map = Gibber.Audio.Core.Binops.MapG( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
             old = map.getValue.bind( map ),
             mapping
         
@@ -22123,7 +22123,7 @@ module.exports = function( Gibber ) {
         return mapping
       },
       interface: function( target, from ) {
-        var _map = Gibber.Audio.Core.Binops.Map( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
+        var _map = Gibber.Audio.Core.Binops.MapG( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
             mapping
             
         if( typeof from.object.functions === 'undefined' ) {
@@ -22181,7 +22181,7 @@ module.exports = function( Gibber ) {
       audio: function( target, from ) {
         var mapping
         
-        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( null, target.min, target.max, from.min, from.max, target.output, from.wrap )
+        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( null, target.min, target.max, from.min, from.max, target.output, from.wrap )
       
         mapping.follow = typeof from.object.track !== 'undefined' ? from.object.track : new Gibber.Audio.Core.Follow({ input:from.object[ from.propertyName ], useAbsoluteValue: false })
         
@@ -22235,7 +22235,7 @@ module.exports = function( Gibber ) {
       },
       audioOut : function( target, from ) {
         if( typeof target.object[ target.Name ].mapping === 'undefined') {
-          var mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( null, target.min, target.max, 0, 1, 0 )   
+          var mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( null, target.min, target.max, 0, 1, 0 )   
           if( typeof from.object.track !== 'undefined' ) {
             mapping.follow = from.object.track
             mapping.follow.count++
@@ -22335,7 +22335,7 @@ module.exports = function( Gibber ) {
       graphics: function( target, from ) {
         // rewrite getValue function of Map object to call Map callback and then return appropriate value
 
-        var map = Gibber.Audio.Core.Binops.Map( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
+        var map = Gibber.Audio.Core.Binops.MapG( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
             old = map.getValue.bind( map ),
             mapping
         
@@ -22369,7 +22369,7 @@ module.exports = function( Gibber ) {
       },
       interface: function( target, from ) {
         // console.log( "FROM", from.propertyName, target.min, target.max, from.min, from.max )
-        var _map = Gibber.Audio.Core.Binops.Map( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
+        var _map = Gibber.Audio.Core.Binops.MapG( from.object[ from.propertyName ], target.min, target.max, from.min, from.max, target.output, from.wrap ),
             mapping
             
         if( typeof from.object.functions === 'undefined' ) {
@@ -22427,7 +22427,7 @@ module.exports = function( Gibber ) {
       audio: function( target, from ) {
         var mapping
         
-        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( null, target.min, target.max, from.min, from.max, target.output, from.wrap )
+        mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( null, target.min, target.max, from.min, from.max, target.output, from.wrap )
   
         if( typeof from.object.track !== 'undefined' && from.object.track.input === from.object.properties[ from.propertyName ] ) {
           mapping.follow = from.object.track
@@ -22485,7 +22485,7 @@ module.exports = function( Gibber ) {
       },
       audioOut : function( target, from ) {
         if( typeof target.object[ target.Name ].mapping === 'undefined') {
-          var mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.Map( null, target.min, target.max, 0, 1, 0 )
+          var mapping = target.object[ target.Name ].mapping = Gibber.Audio.Core.Binops.MapG( null, target.min, target.max, 0, 1, 0 )
           
           if( typeof from.object.track !== 'undefined' && from.object.track.input === from.object.properties[ from.propertyName ] ) {
             mapping.follow = from.object.track
