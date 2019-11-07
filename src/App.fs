@@ -232,15 +232,18 @@ let kinectronSketch ip canvasWidth canvasHeight =
     for j in body.joints do 
       //draw closed right hand differently (large white)
       if j.jointType = kinectron.HANDRIGHT && body.rightHandState = 2  then
-        p5.fill( 255.0 |> U4.Case1 )
+        // p5.fill( 255.0 |> U4.Case1 )
+        Browser.Dom.window?fill(255.0)
         p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
       //draw closed left hand differently (large white)
       elif j.jointType = kinectron.HANDLEFT && body.leftHandState = 2 then
-        p5.fill( 255.0 |> U4.Case1 )
+        // p5.fill( 255.0 |> U4.Case1 )
+        Browser.Dom.window?fill(255.0)
         p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 30.0,30.0) |> ignore
       //draw all other joints with body color; skip head/neck b/c we will draw text there
       elif j.jointType <> kinectron.HEAD && j.jointType <> kinectron.NECK then
-        p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
+        // p5.fill( colors.[body.bodyIndex] |> U4.Case2 )
+        Browser.Dom.window?fill(colors.[body.bodyIndex])
         p5.ellipse( j.depthX * canvasWidth, j.depthY * canvasHeight, 15.0,15.0) |> ignore
 
     //Lasso both hands (peace sign) is change insturments; closed hands (3) means rhythm programming; everything else is melody live performance
@@ -262,7 +265,8 @@ let kinectronSketch ip canvasWidth canvasHeight =
     let rightY = ( body.joints.[kinectron.HANDRIGHT].depthY - body.joints.[kinectron.SPINEBASE].depthY)/(width * 3.0) 
 
     //display state
-    p5.fill( 255.0 |> U4.Case1 )
+    //p5.fill( 255.0 |> U4.Case1 )
+    Browser.Dom.window?fill(255.0)
     p5.noStroke() |> ignore
     p5.textSize(20.0 ) |> ignore 
     let rs (f:float) =
@@ -597,9 +601,9 @@ let root model dispatch =
 Program.mkProgram init update root
 |> Program.withSubscription mapEventSubscription
 #if DEBUG
-|> Program.withDebugger
+// |> Program.withDebugger
 |> Program.withConsoleTrace
 #endif
-// |> Program.withReactSynchronous "elmish-app"
-|> Program.withReactBatched "elmish-app"
+|> Program.withReactSynchronous "elmish-app"
+// |> Program.withReactBatched "elmish-app"
 |> Program.run

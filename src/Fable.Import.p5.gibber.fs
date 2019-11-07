@@ -2,8 +2,8 @@ namespace Fable.Import
 open System
 open System.Text.RegularExpressions
 open Fable.Core
-open Fable.Import.JS
-open Fable.Import.Browser
+open Fable.Core.JS
+open Browser
 open System
 
 
@@ -704,6 +704,10 @@ module p5 =
     let color(v1: float, v2: float, v3: float ): ResizeArray<obj> = jsNative
     [<Global>]
     let background(gray: float, opacity: int): unit = jsNative
+    
+    //Nasty namespace pollution on upgrading to Fable.Core 3
+    // [<Emit("window.fill($0)")>]
+    // let p5fill (value:obj) : unit = jsNative
     [<Global>]
     let fill(v1:U4<float, ResizeArray<obj>, string, Color>): unit = jsNative
     [<Global>]
