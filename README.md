@@ -3,6 +3,23 @@ Use [kinectron](https://github.com/kinectron/kinectron) skeletal tracking data o
 
 For more information on the development and how to use [see this post](https://olney.ai/category/2018/12/02/fabletekno.html).
 
+Basic start up process:
+
+- Start Kinectron server (see shortcut link)
+- Select `Skeleton (Tracked Bodies)`. You should see your skeleton tracking in Kinectron preview.
+- Open project folder in VsCode
+- `npm start` to start localhost dev server
+- Go to Chromium (see shortcut link; must be older version for Kinectron, e.g. 69)
+- Open `localhost:8080`
+- Press `Connect` (default is localhost Kinectron)
+
+Troubleshooting:
+
+- If you see your skeleton but don't hear anything, you may need to resume audio (but not for Chromium 69; modern Chrome requires user input to start audio)
+- If you have any Kinectron issues (firewall, etc) see the documentation for Kinectron
+- If the mouse version of the current project works, your issues are likely with Kinectron
+
+
 ------------------------------
 
 ## Development requirements
